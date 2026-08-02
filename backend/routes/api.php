@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\PotController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,6 +21,5 @@ Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
-    // CRUD des pots (F1)
-    Route::apiResource('pots', PotController::class);
+    // ici on mettra les routes protégées (pots, membres, etc.)
 });
