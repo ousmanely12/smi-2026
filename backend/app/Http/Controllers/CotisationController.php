@@ -7,11 +7,10 @@ use App\Models\Membre;
 use App\Models\Pot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use App\Services\AuditService;
 
 class CotisationController extends Controller
 {
-    // Générer un lien de paiement (simulation)
     public function genererLien(Request $request)
     {
         $request->validate([
@@ -23,19 +22,14 @@ class CotisationController extends Controller
         $membre = Membre::find($request->membre_id);
         $this->authorizeMembre($membre);
 
-        // Vérifier que le membre appartient au trésorier
         $pot = $membre->pot;
         if ($pot->tresorier_id !== Auth::id()) {
             return response()->json(['message' => 'Non autorisé'], 403);
         }
 
-        // Générer une référence unique
         $reference = 'PAY-' . strtoupper(uniqid());
-
-        // Simuler un lien de paiement (mock)
         $lienPaiement = 'https://paydunya.com/payer/' . $reference;
 
-        // Créer la cotisation avec statut "en_attente"
         $cotisation = Cotisation::create([
             'membre_id' => $request->membre_id,
             'pot_id' => $pot->id,
@@ -46,7 +40,13 @@ class CotisationController extends Controller
             'auteur' => 'systeme',
         ]);
 
-        // Simuler la génération d'un QR code (mock)
+        AuditService::log(
+            'generation_paiement',
+            "Génération d'un lien de paiement pour le membre ID {$cotisation->membre_id} (mode: {$cotisation->mode_paiement})",
+            'cotisations',
+            $cotisation->id
+        );
+
         $qrCode = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($lienPaiement);
 
         return response()->json([
@@ -59,7 +59,6 @@ class CotisationController extends Controller
         ]);
     }
 
-    // Simuler la confirmation d'un paiement
     public function confirmerPaiement(Request $request)
     {
         $request->validate([
@@ -70,17 +69,22 @@ class CotisationController extends Controller
         $membre = $cotisation->membre;
         $this->authorizeMembre($membre);
 
-        // Vérifier que la cotisation est en attente
         if ($cotisation->statut !== 'en_attente') {
             return response()->json(['message' => 'Cette cotisation est déjà confirmée'], 400);
         }
 
-        // Confirmer la cotisation
         $cotisation->update([
             'statut' => 'confirme',
             'date_paiement' => now(),
             'auteur' => 'systeme',
         ]);
+
+        AuditService::log(
+            'confirmation_paiement',
+            "Confirmation du paiement ID {$cotisation->id} pour le membre ID {$membre->id}",
+            'cotisations',
+            $cotisation->id
+        );
 
         return response()->json([
             'message' => 'Paiement confirmé',
@@ -88,7 +92,6 @@ class CotisationController extends Controller
         ]);
     }
 
-    // Saisie manuelle d'un paiement en espèces
     public function saisieManuelle(Request $request)
     {
         $request->validate([
@@ -114,13 +117,19 @@ class CotisationController extends Controller
             'auteur' => 'tresorier',
         ]);
 
+        AuditService::log(
+            'saisie_manuelle_paiement',
+            "Saisie manuelle d'un paiement en espèces pour le membre ID {$membre->id} (montant: {$cotisation->montant} FCFA)",
+            'cotisations',
+            $cotisation->id
+        );
+
         return response()->json([
             'message' => 'Paiement en espèces enregistré',
             'cotisation' => $cotisation,
         ]);
     }
 
-    // Récupérer l'historique des cotisations d'un pot
     public function historique($pot_id)
     {
         $pot = Pot::find($pot_id);
