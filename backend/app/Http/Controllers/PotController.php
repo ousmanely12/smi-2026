@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuditService;
 
 class PotController extends Controller
 {
@@ -33,6 +34,13 @@ class PotController extends Controller
             'regle_sortie' => $request->regle_sortie,
         ]);
 
+        AuditService::log(
+            'creation_pot',
+            "Création du pot '{$pot->nom}' d'un montant de {$pot->montant} FCFA",
+            'pots',
+            $pot->id
+        );
+
         return response()->json($pot, 201);
     }
 
@@ -59,6 +67,14 @@ class PotController extends Controller
         ]);
 
         $pot->update($request->all());
+
+        AuditService::log(
+            'modification_pot',
+            "Modification du pot '{$pot->nom}' (ID: {$pot->id})",
+            'pots',
+            $pot->id
+        );
+
         return response()->json($pot);
     }
 
@@ -68,7 +84,17 @@ class PotController extends Controller
             return response()->json(['message' => 'Non autorisé'], 403);
         }
 
+        $nom = $pot->nom;
+        $id = $pot->id;
         $pot->delete();
+
+        AuditService::log(
+            'suppression_pot',
+            "Suppression du pot '{$nom}' (ID: {$id})",
+            'pots',
+            $id
+        );
+
         return response()->json(['message' => 'Pot supprimé']);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Pot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditService;
 
 class MembreController extends Controller
 {
@@ -42,6 +43,14 @@ class MembreController extends Controller
         }
 
         $membre = Membre::create($data);
+
+        AuditService::log(
+            'creation_membre',
+            "Ajout du membre '{$membre->nom}' au pot ID {$membre->pot_id}",
+            'membres',
+            $membre->id
+        );
+
         return response()->json($membre, 201);
     }
 
@@ -77,6 +86,14 @@ class MembreController extends Controller
         }
 
         $membre->update($data);
+
+        AuditService::log(
+            'modification_membre',
+            "Modification du membre '{$membre->nom}' (ID: {$membre->id})",
+            'membres',
+            $membre->id
+        );
+
         return response()->json($membre);
     }
 
@@ -91,7 +108,17 @@ class MembreController extends Controller
         if ($membre->photo) {
             Storage::disk('public')->delete($membre->photo);
         }
+
+        $nom = $membre->nom;
+        $id = $membre->id;
         $membre->delete();
+
+        AuditService::log(
+            'suppression_membre',
+            "Suppression du membre '{$nom}' (ID: {$id})",
+            'membres',
+            $id
+        );
 
         return response()->json(['message' => 'Membre supprimé']);
     }
@@ -114,6 +141,13 @@ class MembreController extends Controller
             'chiffre' => true,
         ]);
 
+        AuditService::log(
+            'ajout_document',
+            "Ajout d'un document de type '{$request->type}' pour le membre ID {$membre->id}",
+            'documents',
+            $document->id
+        );
+
         return response()->json($document, 201);
     }
 
@@ -123,7 +157,15 @@ class MembreController extends Controller
         $this->authorizeMembre($membre);
 
         Storage::disk('public')->delete($document->chemin_fichier);
+        $id = $document->id;
         $document->delete();
+
+        AuditService::log(
+            'suppression_document',
+            "Suppression d'un document (ID: {$id}) pour le membre ID {$membre->id}",
+            'documents',
+            $id
+        );
 
         return response()->json(['message' => 'Document supprimé']);
     }
