@@ -85,12 +85,11 @@ class MembreController extends Controller
             $data['photo'] = $path;
         }
 
-        $oldNom = $membre->nom;
         $membre->update($data);
 
         AuditService::log(
             'modification_membre',
-            "Modification du membre '{$oldNom}' (ID: {$membre->id})",
+            "Modification du membre '{$membre->nom}' (ID: {$membre->id})",
             'membres',
             $membre->id
         );

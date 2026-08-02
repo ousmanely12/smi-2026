@@ -66,12 +66,11 @@ class PotController extends Controller
             'regle_sortie' => 'nullable|string',
         ]);
 
-        $oldNom = $pot->nom;
         $pot->update($request->all());
 
         AuditService::log(
             'modification_pot',
-            "Modification du pot '{$oldNom}' (ID: {$pot->id})",
+            "Modification du pot '{$pot->nom}' (ID: {$pot->id})",
             'pots',
             $pot->id
         );
