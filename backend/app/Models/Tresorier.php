@@ -11,13 +11,6 @@ class Tresorier extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $fillable = [
-        'telephone',
-        'password',
-    ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $fillable = ['telephone', 'password'];
+    protected $hidden = ['password', 'remember_token'];
 }

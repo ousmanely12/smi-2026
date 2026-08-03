@@ -30,102 +30,51 @@ class MembreController extends Controller
         ]);
 
         $pot = Pot::where('id', $request->pot_id)->where('tresorier_id', Auth::id())->first();
-        if (!$pot) {
-            return response()->json(['message' => 'Non autorisé'], 403);
-        }
+        if (!$pot) return response()->json(['message' => 'Non autorisé'], 403);
 
         $data = $request->except(['photo', 'consentement']);
         $data['consentement_date'] = $request->consentement ? now() : null;
 
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('photos', 'public');
-            $data['photo'] = $path;
+            $data['photo'] = $request->file('photo')->store('photos', 'public');
         }
 
         $membre = Membre::create($data);
-
-        AuditService::log(
-            'creation_membre',
-            "Ajout du membre '{$membre->nom}' au pot ID {$membre->pot_id}",
-            'membres',
-            $membre->id
-        );
-
+        AuditService::log('creation_membre', "Ajout du membre '{$membre->nom}'", 'membres', $membre->id);
         return response()->json($membre, 201);
     }
 
     public function show(Membre $membre)
     {
-        $this->authorizeMembre($membre);
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
         return response()->json($membre->load('documents'));
     }
 
     public function update(Request $request, Membre $membre)
     {
-        $this->authorizeMembre($membre);
-
-        $request->validate([
-            'nom' => 'sometimes|string|max:255',
-            'telephone' => 'sometimes|string',
-            'adresse' => 'nullable|string',
-            'photo' => 'nullable|image|max:2048',
-            'consentement' => 'sometimes|boolean',
-        ]);
-
-        $data = $request->except(['photo', 'consentement']);
-        if ($request->has('consentement')) {
-            $data['consentement_date'] = $request->consentement ? now() : null;
-        }
-
-        if ($request->hasFile('photo')) {
-            if ($membre->photo) {
-                Storage::disk('public')->delete($membre->photo);
-            }
-            $path = $request->file('photo')->store('photos', 'public');
-            $data['photo'] = $path;
-        }
-
-        $membre->update($data);
-
-        AuditService::log(
-            'modification_membre',
-            "Modification du membre '{$membre->nom}' (ID: {$membre->id})",
-            'membres',
-            $membre->id
-        );
-
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
+        $membre->update($request->all());
+        AuditService::log('modification_membre', "Modification du membre '{$membre->nom}'", 'membres', $membre->id);
         return response()->json($membre);
     }
 
     public function destroy(Membre $membre)
     {
-        $this->authorizeMembre($membre);
-
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
+        $nom = $membre->nom;
         foreach ($membre->documents as $doc) {
             Storage::disk('public')->delete($doc->chemin_fichier);
             $doc->delete();
         }
-        if ($membre->photo) {
-            Storage::disk('public')->delete($membre->photo);
-        }
-
-        $nom = $membre->nom;
-        $id = $membre->id;
+        if ($membre->photo) Storage::disk('public')->delete($membre->photo);
         $membre->delete();
-
-        AuditService::log(
-            'suppression_membre',
-            "Suppression du membre '{$nom}' (ID: {$id})",
-            'membres',
-            $id
-        );
-
+        AuditService::log('suppression_membre', "Suppression du membre '{$nom}'", 'membres', $membre->id);
         return response()->json(['message' => 'Membre supprimé']);
     }
 
     public function addDocument(Request $request, Membre $membre)
     {
-        $this->authorizeMembre($membre);
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
 
         $request->validate([
             'type' => 'required|in:cni_recto,cni_verso,autre_garantie',
@@ -141,39 +90,18 @@ class MembreController extends Controller
             'chiffre' => true,
         ]);
 
-        AuditService::log(
-            'ajout_document',
-            "Ajout d'un document de type '{$request->type}' pour le membre ID {$membre->id}",
-            'documents',
-            $document->id
-        );
-
+        AuditService::log('ajout_document', "Ajout d'un document de type '{$request->type}'", 'documents', $document->id);
         return response()->json($document, 201);
     }
 
     public function deleteDocument(Document $document)
     {
         $membre = $document->membre;
-        $this->authorizeMembre($membre);
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
 
         Storage::disk('public')->delete($document->chemin_fichier);
-        $id = $document->id;
         $document->delete();
-
-        AuditService::log(
-            'suppression_document',
-            "Suppression d'un document (ID: {$id}) pour le membre ID {$membre->id}",
-            'documents',
-            $id
-        );
-
+        AuditService::log('suppression_document', "Suppression d'un document", 'documents', $document->id);
         return response()->json(['message' => 'Document supprimé']);
-    }
-
-    private function authorizeMembre($membre)
-    {
-        if ($membre->pot->tresorier_id !== Auth::id()) {
-            abort(403, 'Non autorisé');
-        }
     }
 }

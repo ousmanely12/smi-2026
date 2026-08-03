@@ -10,13 +10,7 @@ class Pot extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tresorier_id',
-        'nom',
-        'montant',
-        'periode',
-        'date_debut',
-        'regle_sortie',
-        'archive',
+        'tresorier_id', 'nom', 'montant', 'periode', 'date_debut', 'regle_sortie', 'archive'
     ];
 
     public function tresorier()

@@ -11,10 +11,7 @@ class RegistreController extends Controller
     {
         $query = AuditLog::query();
 
-        if ($request->has('action')) {
-            $query->where('action', $request->action);
-        }
-
+        if ($request->has('action')) $query->where('action', $request->action);
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -23,12 +20,7 @@ class RegistreController extends Controller
             });
         }
 
-        $logs = $query->orderBy('created_at', 'desc')->get();
-
-        return response()->json([
-            'message' => 'Historique récupéré',
-            'data' => $logs,
-        ]);
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
     public function verifierIntegrite()
@@ -45,7 +37,6 @@ class RegistreController extends Controller
                 'row_id' => $log->ligne_id,
                 'timestamp' => $log->created_at->timestamp,
             ];
-
             $signatureCalculee = hash('sha256', json_encode($data));
 
             $verification[] = [
@@ -66,11 +57,6 @@ class RegistreController extends Controller
 
     public function exporter()
     {
-        $logs = AuditLog::all();
-
-        return response()->json([
-            'message' => 'Export PDF généré (simulation)',
-            'data' => $logs,
-        ]);
+        return response()->json(['message' => 'Export PDF généré (simulation)', 'data' => AuditLog::all()]);
     }
 }

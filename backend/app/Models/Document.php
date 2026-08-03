@@ -9,12 +9,7 @@ class Document extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'membre_id',
-        'type',
-        'chemin_fichier',
-        'chiffre',
-    ];
+    protected $fillable = ['membre_id', 'type', 'chemin_fichier', 'chiffre'];
 
     public function membre()
     {

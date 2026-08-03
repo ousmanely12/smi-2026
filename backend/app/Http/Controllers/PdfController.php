@@ -19,20 +19,9 @@ class PdfController extends Controller
         ]);
 
         $membre = Membre::find($request->membre_id);
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
 
-        if ($membre->pot->tresorier_id !== Auth::id()) {
-            return response()->json(['message' => 'Non autorisé'], 403);
-        }
-
-        $pot = $membre->pot;
-
-        $result = PdfService::genererRecu(
-            $membre,
-            $pot,
-            $request->montant,
-            $request->reference
-        );
-
+        $result = PdfService::genererRecu($membre, $membre->pot, $request->montant, $request->reference);
         return $result['pdf']->download($result['filename']);
     }
 
@@ -44,24 +33,10 @@ class PdfController extends Controller
         ]);
 
         $membre = Membre::find($request->membre_id);
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
 
-        if ($membre->pot->tresorier_id !== Auth::id()) {
-            return response()->json(['message' => 'Non autorisé'], 403);
-        }
-
-        $pot = $membre->pot;
-
-        $totalCotise = Cotisation::where('membre_id', $membre->id)
-            ->where('statut', 'confirme')
-            ->sum('montant');
-
-        $result = PdfService::genererAttestation(
-            $membre,
-            $pot,
-            $request->periode,
-            $totalCotise
-        );
-
+        $totalCotise = Cotisation::where('membre_id', $membre->id)->where('statut', 'confirme')->sum('montant');
+        $result = PdfService::genererAttestation($membre, $membre->pot, $request->periode, $totalCotise);
         return $result['pdf']->download($result['filename']);
     }
 
@@ -74,20 +49,9 @@ class PdfController extends Controller
         ]);
 
         $membre = Membre::find($request->membre_id);
+        if ($membre->pot->tresorier_id !== Auth::id()) return response()->json(['message' => 'Non autorisé'], 403);
 
-        if ($membre->pot->tresorier_id !== Auth::id()) {
-            return response()->json(['message' => 'Non autorisé'], 403);
-        }
-
-        $pot = $membre->pot;
-
-        $result = PdfService::genererRecu(
-            $membre,
-            $pot,
-            $request->montant,
-            $request->reference
-        );
-
+        $result = PdfService::genererRecu($membre, $membre->pot, $request->montant, $request->reference);
         return $result['pdf']->stream($result['filename']);
     }
 }

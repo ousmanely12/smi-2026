@@ -11,13 +11,11 @@ class AuthController extends Controller
 {
     public function requestOtp(Request $request)
     {
-        $request->validate([
-            'telephone' => 'required|string|regex:/^\+221[0-9]{9}$/',
-        ]);
+        $request->validate(['telephone' => 'required|string|regex:/^\+221[0-9]{9}$/']);
 
         $telephone = $request->telephone;
 
-        $tresorier = Tresorier::firstOrCreate(
+        Tresorier::firstOrCreate(
             ['telephone' => $telephone],
             ['password' => Hash::make('default')]
         );
@@ -28,7 +26,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Code envoyé par SMS',
             'telephone' => $telephone,
-            'code' => $code, // on renvoie le code directement pour le test
+            'code' => $code,
         ]);
     }
 
@@ -45,9 +43,7 @@ class AuthController extends Controller
         $storedCode = Cache::get('otp_' . $telephone);
 
         if (!$storedCode || $storedCode !== $code) {
-            return response()->json([
-                'message' => 'Code invalide ou expiré',
-            ], 401);
+            return response()->json(['message' => 'Code invalide ou expiré'], 401);
         }
 
         Cache::forget('otp_' . $telephone);
@@ -65,9 +61,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-
-        return response()->json([
-            'message' => 'Déconnecté',
-        ]);
+        return response()->json(['message' => 'Déconnecté']);
     }
 }

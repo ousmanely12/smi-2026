@@ -10,12 +10,7 @@ class Membre extends Model
     use HasFactory;
 
     protected $fillable = [
-        'pot_id',
-        'nom',
-        'telephone',
-        'adresse',
-        'photo',
-        'consentement_date',
+        'pot_id', 'nom', 'telephone', 'adresse', 'photo', 'consentement_date'
     ];
 
     public function pot()

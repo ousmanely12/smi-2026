@@ -10,15 +10,8 @@ class Cotisation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'membre_id',
-        'pot_id',
-        'montant',
-        'mode_paiement',
-        'statut',
-        'reference_externe',
-        'qr_code',
-        'auteur',
-        'date_paiement',
+        'membre_id', 'pot_id', 'montant', 'mode_paiement', 'statut',
+        'reference_externe', 'qr_code', 'auteur', 'date_paiement'
     ];
 
     public function membre()
