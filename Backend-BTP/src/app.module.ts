@@ -31,6 +31,10 @@ import { UtilisateursModule } from './utilisateurs/utilisateurs.module'; // M10
         database: config.get<string>('DB_DATABASE', ''),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true, // ⚠️ À remplacer par des migrations en production
+        ssl:
+          config.get<string>('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
       }),
     }),
     ProjetsModule,
@@ -48,4 +52,4 @@ import { UtilisateursModule } from './utilisateurs/utilisateurs.module'; // M10
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
