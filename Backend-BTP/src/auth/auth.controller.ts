@@ -1,4 +1,6 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { UpdateProfilDto } from '../utilisateurs/dto/update-profil.dto';
+import { ChangerMotDePasseDto } from '../utilisateurs/dto/changer-mot-de-passe.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -12,7 +14,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly utilisateursService: UtilisateursService,
-  ) {}
+  ) { }
 
   /**
    * POST /api/auth/login
@@ -55,6 +57,25 @@ export class AuthController {
   @Get('me')
   me(@UtilisateurCourant() user: any) {
     return user;
+  }
+  /**
+   * PATCH /api/auth/profil
+   * Modifie son propre profil (nom, prénom, téléphone, poste)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('profil')
+  updateProfil(@UtilisateurCourant() user: any, @Body() dto: UpdateProfilDto) {
+    return this.utilisateursService.updateProfil(user.id, dto);
+  }
+
+  /**
+   * PATCH /api/auth/mot-de-passe
+   * Change son propre mot de passe (ancien mot de passe requis)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('mot-de-passe')
+  changerMotDePasse(@UtilisateurCourant() user: any, @Body() dto: ChangerMotDePasseDto) {
+    return this.utilisateursService.changerMotDePasse(user.id, dto.ancienMotDePasse, dto.nouveauMotDePasse);
   }
 }
 

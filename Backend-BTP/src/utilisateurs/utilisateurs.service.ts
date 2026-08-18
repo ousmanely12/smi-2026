@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Utilisateur } from './entities/utilisateur.entity';
@@ -9,7 +9,7 @@ export class UtilisateursService {
   constructor(
     @InjectRepository(Utilisateur)
     private readonly utilisateurRepository: Repository<Utilisateur>,
-  ) {}
+  ) { }
 
   async create(dto: CreateUtilisateurDto): Promise<Partial<Utilisateur>> {
     const existant = await this.utilisateurRepository.findOneBy({ email: dto.email });
@@ -47,6 +47,35 @@ export class UtilisateursService {
       .where('u.email = :email', { email })
       .andWhere('u.actif = true')
       .getOne();
+  }
+
+  async updateProfil(id: string, dto: { nom?: string; prenom?: string; telephone?: string; poste?: string }) {
+    const utilisateur = await this.utilisateurRepository.findOneBy({ id });
+    if (!utilisateur) {
+      throw new NotFoundException(`Utilisateur "${id}" introuvable.`);
+    }
+    Object.assign(utilisateur, dto);
+    const saved = await this.utilisateurRepository.save(utilisateur);
+    const { motDePasse: _pwd, ...result } = saved as any;
+    return result;
+  }
+
+  async changerMotDePasse(id: string, ancienMotDePasse: string, nouveauMotDePasse: string) {
+    const utilisateur = await this.utilisateurRepository
+      .createQueryBuilder('u')
+      .addSelect('u.motDePasse')
+      .where('u.id = :id', { id })
+      .getOne();
+    if (!utilisateur) {
+      throw new NotFoundException(`Utilisateur "${id}" introuvable.`);
+    }
+    const valide = await utilisateur.verifierMotDePasse(ancienMotDePasse);
+    if (!valide) {
+      throw new UnauthorizedException('Ancien mot de passe incorrect.');
+    }
+    utilisateur.motDePasse = nouveauMotDePasse;
+    await this.utilisateurRepository.save(utilisateur);
+    return { message: 'Mot de passe modifié avec succès.' };
   }
 
   async desactiver(id: string): Promise<void> {
