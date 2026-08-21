@@ -1,121 +1,59 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useNavigate } from 'react-router-dom'
+import { Building2, ArrowRight } from 'lucide-react'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const navigate = useNavigate()
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
+      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: '900px' }}>
+          <div style={{ marginBottom: '48px' }}>
+            <div style={{ width: '100px', height: '100px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: 'white' }}>
+              <Building2 size={48} />
+            </div>
+            <h1 style={{ fontSize: '56px', fontWeight: 800, marginBottom: '12px', color: '#fff' }}>BATIPME-SN</h1>
+            <p style={{ fontSize: '20px', color: '#94a3b8', marginBottom: '8px' }}>Logiciel de Gestion de Projets BTP</p>
+            <p style={{ fontSize: '15px', color: '#64748b' }}>Adapté aux PME du Sénégal 🇸🇳</p>
+          </div>
 
-      <div className="ticks"></div>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '48px' }}>
+            <button 
+              onClick={() => navigate('/login')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '14px 32px', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white' }}
+            >
+              Se Connecter
+              <ArrowRight size={20} />
+            </button>
+            <button 
+              onClick={() => navigate('/login')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '14px 32px', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(148, 163, 184, 0.12)', background: 'rgba(255, 255, 255, 0.05)', color: '#f8fafc' }}
+            >
+              Découvrir
+            </button>
+          </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+          <div style={{ display: 'flex', gap: '48px', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#3b82f6', marginBottom: '4px' }}>10+</div>
+              <div style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase' }}>Modules</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#3b82f6', marginBottom: '4px' }}>100%</div>
+              <div style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase' }}>Sécurisé</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#3b82f6', marginBottom: '4px' }}>24/7</div>
+              <div style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase' }}>Support</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer style={{ padding: '32px 20px', textAlign: 'center', borderTop: '1px solid rgba(148, 163, 184, 0.12)', fontSize: '13px', color: '#64748b' }}>
+        <p>© 2026 BATIPME-SN. Tous droits réservés.</p>
+      </footer>
+    </div>
   )
 }
 
