@@ -1,0 +1,374 @@
+{
+  "info": {
+    "name": "BATIPME-SN API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "projetId", "value": "" },
+    { "key": "personnelId", "value": "" },
+    { "key": "fournisseurId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "1 - AUTH",
+      "item": [
+        {
+          "name": "1.1 Login (Mamadou DG)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "var res = pm.response.json();",
+                "pm.collectionVariables.set('token', res.access_token);",
+                "pm.test('Login OK', () => pm.response.to.have.status(200));"
+              ]
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mamadou.diallo@batipme.sn\",\n  \"motDePasse\": \"Admin2026!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.2 Me (profil connecte)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - PROJETS (M1)",
+      "item": [
+        {
+          "name": "2.1 Creer Projet",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "var res = pm.response.json();",
+                "pm.collectionVariables.set('projetId', res.id);",
+                "pm.test('Projet cree', () => pm.response.to.have.status(201));"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reference\": \"PRJ-2026-PIKINE-001\",\n  \"intitule\": \"Construction Ecole Primaire Pikine\",\n  \"description\": \"Construction ecole 6 classes avec cloture et bloc sanitaire\",\n  \"typeMarche\": \"public\",\n  \"typeProjet\": \"batiment_administratif\",\n  \"region\": \"Dakar\",\n  \"commune\": \"Pikine\",\n  \"latitude\": 14.7547,\n  \"longitude\": -17.3867,\n  \"maitreOuvrage\": \"Ministere Education Nationale\",\n  \"maitreOeuvre\": \"BET Sahel Ingenierie\",\n  \"montantMarche\": 150000000,\n  \"sourceFinancement\": \"Budget national\",\n  \"retenueGarantiePourcent\": 5,\n  \"dateNotification\": \"2026-01-15\",\n  \"dateDemarrage\": \"2026-03-01\",\n  \"dureeContractuelleJours\": 365,\n  \"numeroMarche\": \"MC-2026-EDU-0045\",\n  \"modePassation\": \"Appel offres ouvert\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.2 Lister Projets",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets" }
+        },
+        {
+          "name": "2.3 Voir Projet",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}" }
+        },
+        {
+          "name": "2.4 Modifier Projet (statut en_cours)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/projets/{{projetId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"statut\": \"en_cours\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - PLANNING (M2)",
+      "item": [
+        {
+          "name": "3.1 Creer Tache",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/taches",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Terrassement et fouilles\",\n  \"lot\": \"terrassement\",\n  \"dateDebutPrevue\": \"2026-03-01\",\n  \"dateFinPrevue\": \"2026-04-15\",\n  \"dureeJours\": 45,\n  \"responsable\": \"Ibrahima Sow\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.2 Lister Taches du Projet",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/taches" }
+        },
+        {
+          "name": "3.3 Creer Jalon",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/jalons",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Fin terrassement\",\n  \"type\": \"contractuel\",\n  \"datePrevu\": \"2026-04-15\"\n}" }
+          }
+        },
+        {
+          "name": "3.4 Lister Jalons",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/jalons" }
+        }
+      ]
+    },
+    {
+      "name": "4 - BUDGET (M3)",
+      "item": [
+        {
+          "name": "4.1 Ajouter Ligne Devis",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/devis",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rubrique\": \"materiaux\",\n  \"designation\": \"Ciment CEM II 32.5\",\n  \"unite\": \"sac\",\n  \"quantite\": 500,\n  \"prixUnitaire\": 4500,\n  \"lot\": \"fondations\",\n  \"ordre\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "4.2 Voir Devis",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/devis" }
+        },
+        {
+          "name": "4.3 Ajouter Depense",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/depenses",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"realisation\",\n  \"categorie\": \"materiaux\",\n  \"montant\": 2250000,\n  \"libelle\": \"Achat ciment 500 sacs SOCOCIM\",\n  \"date\": \"2026-03-10\",\n  \"fournisseur\": \"SOCOCIM Industries\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4.4 Voir Depenses",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/depenses" }
+        },
+        {
+          "name": "4.5 Ajouter Avenant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/avenants",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"numero\": 1,\n  \"motif\": \"Extension fondations zone argileuse\",\n  \"montant\": 5000000,\n  \"prolongationJours\": 15\n}" }
+          }
+        },
+        {
+          "name": "4.6 KPIs Budget",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/budget" }
+        }
+      ]
+    },
+    {
+      "name": "5 - RESSOURCES (M4)",
+      "item": [
+        {
+          "name": "5.1 Creer Personnel",
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.collectionVariables.set('personnelId', pm.response.json().id);"] }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/personnel",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Sow\",\n  \"prenom\": \"Ibrahima\",\n  \"poste\": \"Macon\",\n  \"categorie\": \"ouvrier_qualifie\",\n  \"typeContrat\": \"journalier\",\n  \"tauxJournalier\": 5000,\n  \"telephone\": \"775551234\"\n}"
+            }
+          }
+        },
+        {
+          "name": "5.2 Lister Personnel",
+          "request": { "method": "GET", "url": "{{baseUrl}}/personnel" }
+        },
+        {
+          "name": "5.3 Creer Pointage",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/pointages",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"personnelId\": \"{{personnelId}}\",\n  \"date\": \"2026-03-10\",\n  \"statut\": \"present\",\n  \"heuresSupplementaires\": 2\n}" }
+          }
+        },
+        {
+          "name": "5.4 Masse Salariale",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/masse-salariale?debut=2026-03-01&fin=2026-03-31" }
+        },
+        {
+          "name": "5.5 Creer Engin",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/engins",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"designation\": \"Pelle mecanique CAT 320\",\n  \"immatriculation\": \"DK-4521-AA\",\n  \"marque\": \"Caterpillar\",\n  \"type\": \"propre\",\n  \"statut\": \"en_service\",\n  \"tauxJournalier\": 150000\n}" }
+          }
+        },
+        {
+          "name": "5.6 Lister Engins",
+          "request": { "method": "GET", "url": "{{baseUrl}}/engins" }
+        }
+      ]
+    },
+    {
+      "name": "6 - SUIVI CHANTIER (M5)",
+      "item": [
+        {
+          "name": "6.1 Creer Journal Chantier",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/journaux",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-03-10\",\n  \"meteo\": \"ensoleille\",\n  \"temperature\": 34,\n  \"nombreOuvriers\": 12,\n  \"travauxRealises\": \"Coulage fondations batiment A\",\n  \"redige_par\": \"Ibrahima Sow\"\n}" }
+          }
+        },
+        {
+          "name": "6.2 Lister Journaux",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/journaux" }
+        },
+        {
+          "name": "6.3 Signaler Incident",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/incidents",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-03-10\",\n  \"type\": \"securite\",\n  \"gravite\": \"faible\",\n  \"description\": \"Ouvrier sans casque zone B\",\n  \"actionsCorrectives\": \"Rappel a l'ordre + EPI distribues\"\n}" }
+          }
+        },
+        {
+          "name": "6.4 Lister Incidents",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/incidents" }
+        }
+      ]
+    },
+    {
+      "name": "7 - DOCUMENTS (M6)",
+      "item": [
+        {
+          "name": "7.1 Ajouter Document",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/documents",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Marche signe Ecole Pikine\",\n  \"type\": \"marche_signe\",\n  \"phase\": \"contractualisation\",\n  \"cheminFichier\": \"/docs/marche-MC-2026.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"deposePar\": \"Mamadou Diallo\"\n}" }
+          }
+        },
+        {
+          "name": "7.2 Lister Documents",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/documents" }
+        },
+        {
+          "name": "7.3 Documents expirant bientot",
+          "request": { "method": "GET", "url": "{{baseUrl}}/documents/expirations" }
+        }
+      ]
+    },
+    {
+      "name": "8 - APPROVISIONNEMENT (M7)",
+      "item": [
+        {
+          "name": "8.1 Creer Fournisseur",
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.collectionVariables.set('fournisseurId', pm.response.json().id);"] }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/fournisseurs",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nom\": \"SOCOCIM Industries\",\n  \"NINEA\": \"00112233445\",\n  \"specialite\": \"ciment\",\n  \"region\": \"Dakar\",\n  \"telephone\": \"338591234\"\n}" }
+          }
+        },
+        {
+          "name": "8.2 Lister Fournisseurs",
+          "request": { "method": "GET", "url": "{{baseUrl}}/fournisseurs" }
+        },
+        {
+          "name": "8.3 Creer Bon Commande",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/bons-commande",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fournisseurId\": \"{{fournisseurId}}\",\n  \"date\": \"2026-03-08\",\n  \"montantTotal\": 2250000,\n  \"observations\": \"500 sacs CEM II 32.5\"\n}" }
+          }
+        },
+        {
+          "name": "8.4 Entree Stock",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/stock",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"entree\",\n  \"materiau\": \"Ciment CEM II 32.5\",\n  \"unite\": \"sac\",\n  \"quantite\": 500,\n  \"prixUnitaire\": 4500,\n  \"date\": \"2026-03-09\",\n  \"responsable\": \"Magasinier Mbaye\"\n}" }
+          }
+        },
+        {
+          "name": "8.5 Stock Chantier (theorique)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/stock" }
+        }
+      ]
+    },
+    {
+      "name": "9 - FACTURATION (M8)",
+      "item": [
+        {
+          "name": "9.1 Creer Situation Travaux",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projets/{{projetId}}/situations",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"numero\": 1,\n  \"mois\": \"2026-03-01\",\n  \"montantHTCumul\": 15000000,\n  \"montantHTNouveau\": 15000000,\n  \"pourcentageAvancement\": 10\n}" }
+          }
+        },
+        {
+          "name": "9.2 Lister Situations",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/situations" }
+        },
+        {
+          "name": "9.3 Recapitulatif Financier",
+          "request": { "method": "GET", "url": "{{baseUrl}}/projets/{{projetId}}/situations/recapitulatif" }
+        }
+      ]
+    },
+    {
+      "name": "10 - DASHBOARD (M9)",
+      "item": [
+        {
+          "name": "10.1 Dashboard Global",
+          "request": { "method": "GET", "url": "{{baseUrl}}/dashboard" }
+        },
+        {
+          "name": "10.2 Dashboard Projet",
+          "request": { "method": "GET", "url": "{{baseUrl}}/dashboard/projets/{{projetId}}" }
+        }
+      ]
+    },
+    {
+      "name": "11 - ADMIN UTILISATEURS (M10)",
+      "item": [
+        {
+          "name": "11.1 Lister Utilisateurs",
+          "request": { "method": "GET", "url": "{{baseUrl}}/admin/utilisateurs" }
+        }
+      ]
+    }
+  ]
+}

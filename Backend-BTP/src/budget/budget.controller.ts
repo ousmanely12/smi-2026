@@ -4,18 +4,22 @@ import { CreateLigneDevisDto } from './dto/create-ligne-devis.dto';
 import { CreateDepenseDto } from './dto/create-depense.dto';
 import { CreateAvenantDto } from './dto/create-avenant.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleUtilisateur } from '../utilisateurs/entities/utilisateur.entity';
 import { ProjetsService } from '../projets/projets.service';
 
 @Controller('projets/:projetId')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class BudgetController {
   constructor(
     private readonly budgetService: BudgetService,
     private readonly projetsService: ProjetsService,
-  ) {}
+  ) { }
 
   // ─── DEVIS ──────────────────────────────────────────────────────────────
   @Post('devis')
+  @Roles(RoleUtilisateur.DIRECTEUR_GENERAL, RoleUtilisateur.DIRECTEUR_TECHNIQUE, RoleUtilisateur.RESPONSABLE_ADMIN_FIN)
   addLigneDevis(@Param('projetId') projetId: string, @Body() dto: CreateLigneDevisDto) {
     return this.budgetService.addLigneDevis(projetId, dto);
   }
@@ -27,6 +31,7 @@ export class BudgetController {
 
   // ─── DÉPENSES ───────────────────────────────────────────────────────────
   @Post('depenses')
+  @Roles(RoleUtilisateur.DIRECTEUR_GENERAL, RoleUtilisateur.DIRECTEUR_TECHNIQUE, RoleUtilisateur.RESPONSABLE_ADMIN_FIN)
   addDepense(@Param('projetId') projetId: string, @Body() dto: CreateDepenseDto) {
     return this.budgetService.addDepense(projetId, dto);
   }
@@ -38,6 +43,7 @@ export class BudgetController {
 
   // ─── AVENANTS ───────────────────────────────────────────────────────────
   @Post('avenants')
+  @Roles(RoleUtilisateur.DIRECTEUR_GENERAL, RoleUtilisateur.DIRECTEUR_TECHNIQUE, RoleUtilisateur.RESPONSABLE_ADMIN_FIN)
   addAvenant(@Param('projetId') projetId: string, @Body() dto: CreateAvenantDto) {
     return this.budgetService.addAvenant(projetId, dto);
   }

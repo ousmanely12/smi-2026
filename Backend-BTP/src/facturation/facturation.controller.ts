@@ -2,16 +2,20 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { FacturationService } from './facturation.service';
 import { ProjetsService } from '../projets/projets.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleUtilisateur } from '../utilisateurs/entities/utilisateur.entity';
 
 @Controller('projets/:projetId')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class FacturationController {
   constructor(
     private readonly facturationService: FacturationService,
     private readonly projetsService: ProjetsService,
-  ) {}
+  ) { }
 
   @Post('situations')
+  @Roles(RoleUtilisateur.DIRECTEUR_GENERAL, RoleUtilisateur.DIRECTEUR_TECHNIQUE, RoleUtilisateur.RESPONSABLE_ADMIN_FIN)
   async createSituation(@Param('projetId') projetId: string, @Body() dto: any) {
     const projet = await this.projetsService.findOne(projetId);
     return this.facturationService.createSituation(projetId, dto, Number(projet.montantMarche));
