@@ -60,10 +60,12 @@ export class RessourcesService {
     const hSup = Number(dto.heuresSupplementaires || 0);
     montantJournalier += hSup * (tauxJour / 8) * 1.25;
 
+    // Extraire les IDs pour éviter de les passer comme colonnes brutes
+    const { personnelId, projetId, ...rest } = dto;
     const pointage = this.pointageRepo.create({
-      ...dto,
-      personnel: { id: dto.personnelId } as any,
-      projet: { id: dto.projetId } as any,
+      ...rest,
+      personnel: { id: personnelId } as any,
+      projet: { id: projetId } as any,
       montantJournalier: Math.round(montantJournalier),
     });
     return this.pointageRepo.save(pointage);

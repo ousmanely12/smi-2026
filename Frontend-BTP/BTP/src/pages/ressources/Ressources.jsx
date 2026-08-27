@@ -80,13 +80,12 @@ export default function Ressources() {
 
     const openModal = (mode) => { setModalMode(mode); setShowModal(true); };
 
-    // ─── Handlers ───
-    const handleAddPersonnel = async (e) => { e.preventDefault(); await createPersonnel({ ...formPersonnel, tauxJournalier: formPersonnel.tauxJournalier ? Number(formPersonnel.tauxJournalier) : undefined, salaireMensuel: formPersonnel.salaireMensuel ? Number(formPersonnel.salaireMensuel) : undefined }); setShowModal(false); setFormPersonnel(emptyPersonnel); reloadGlobals(); };
-    const handleAddEngin = async (e) => { e.preventDefault(); await createEngin({ ...formEngin, tauxJournalier: formEngin.tauxJournalier ? Number(formEngin.tauxJournalier) : undefined }); setShowModal(false); setFormEngin(emptyEngin); reloadGlobals(); };
-    const handleAddSousTraitant = async (e) => { e.preventDefault(); await createSousTraitant(formSousTraitant); setShowModal(false); setFormSousTraitant(emptySousTraitant); reloadGlobals(); };
-    const handleAddPointage = async (e) => { e.preventDefault(); await createPointage(projetId, { ...formPointage, heuresSupplementaires: Number(formPointage.heuresSupplementaires) || 0 }); setShowModal(false); setFormPointage(emptyPointage); loadProjetData(projetId); };
-    const handleAffecterEngin = async (e) => { e.preventDefault(); await affecterEngin(projetId, formAffEngin); setShowModal(false); setFormAffEngin(emptyAffEngin); loadProjetData(projetId); };
-    const handleAffecterST = async (e) => { e.preventDefault(); await affecterSousTraitant(projetId, { ...formAffST, montantContrat: formAffST.montantContrat ? Number(formAffST.montantContrat) : undefined }); setShowModal(false); setFormAffST(emptyAffST); loadProjetData(projetId); };
+    const handleAddPersonnel = async (e) => { e.preventDefault(); try { await createPersonnel({ ...formPersonnel, tauxJournalier: formPersonnel.tauxJournalier ? Number(formPersonnel.tauxJournalier) : undefined, salaireMensuel: formPersonnel.salaireMensuel ? Number(formPersonnel.salaireMensuel) : undefined }); setShowModal(false); setFormPersonnel(emptyPersonnel); reloadGlobals(); } catch(err) { alert('Erreur: ' + (err.message || JSON.stringify(err))); } };
+    const handleAddEngin = async (e) => { e.preventDefault(); try { await createEngin({ ...formEngin, tauxJournalier: formEngin.tauxJournalier ? Number(formEngin.tauxJournalier) : undefined }); setShowModal(false); setFormEngin(emptyEngin); reloadGlobals(); } catch(err) { alert('Erreur: ' + (err.message || JSON.stringify(err))); } };
+    const handleAddSousTraitant = async (e) => { e.preventDefault(); try { await createSousTraitant(formSousTraitant); setShowModal(false); setFormSousTraitant(emptySousTraitant); reloadGlobals(); } catch(err) { alert('Erreur: ' + (err.message || JSON.stringify(err))); } };
+    const handleAddPointage = async (e) => { e.preventDefault(); try { await createPointage(projetId, { ...formPointage, heuresSupplementaires: Number(formPointage.heuresSupplementaires) || 0 }); setShowModal(false); setFormPointage(emptyPointage); loadProjetData(projetId); } catch(err) { alert('Erreur: ' + (err.message || JSON.stringify(err))); } };
+    const handleAffecterEngin = async (e) => { e.preventDefault(); try { await affecterEngin(projetId, formAffEngin); setShowModal(false); setFormAffEngin(emptyAffEngin); loadProjetData(projetId); } catch(err) { alert('Erreur: ' + (err.message || JSON.stringify(err))); } };
+    const handleAffecterST = async (e) => { e.preventDefault(); try { await affecterSousTraitant(projetId, { ...formAffST, montantContrat: formAffST.montantContrat ? Number(formAffST.montantContrat) : undefined }); setShowModal(false); setFormAffST(emptyAffST); loadProjetData(projetId); } catch(err) { alert('Erreur: ' + (err.message || JSON.stringify(err))); } };
 
     const formatFCFA = (n) => n ? `${Number(n).toLocaleString('fr-FR')} FCFA` : '—';
     const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
