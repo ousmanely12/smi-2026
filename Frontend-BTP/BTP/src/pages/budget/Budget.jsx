@@ -3,8 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { getProjets, getBudgetKpi, getDevis, addLigneDevis, getDepenses, addDepense } from '../../api/api';
 import { Plus, X, Wallet, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 
-const emptyLigneDevis = { designation: '', unite: '', quantite: '', prixUnitaire: '' };
-const emptyDepense = { libelle: '', montant: '', categorie: '' };
+const emptyLigneDevis = { rubrique: 'materiaux', designation: '', unite: '', quantite: '', prixUnitaire: '' };
+const emptyDepense = { type: 'engagement', libelle: '', montant: '', categorie: 'materiaux', date: new Date().toISOString().slice(0, 10) };
+
+const RUBRIQUES = [
+    { value: 'main_oeuvre', label: 'Main d\'œuvre' },
+    { value: 'materiaux', label: 'Matériaux' },
+    { value: 'materiel_engins', label: 'Matériel / Engins' },
+    { value: 'sous_traitance', label: 'Sous-traitance' },
+    { value: 'frais_chantier', label: 'Frais de chantier' },
+    { value: 'frais_generaux', label: 'Frais généraux' },
+    { value: 'imprevus', label: 'Imprévus' },
+    { value: 'benefice', label: 'Bénéfice' },
+];
+
+const TYPES_DEPENSE = [
+    { value: 'engagement', label: 'Engagement (bon de commande)' },
+    { value: 'realisation', label: 'Réalisation (facture payée)' },
+];
+
+const CATEGORIES_DEPENSE = [
+    { value: 'main_oeuvre', label: 'Main d\'œuvre' },
+    { value: 'materiaux', label: 'Matériaux' },
+    { value: 'materiel', label: 'Matériel' },
+    { value: 'sous_traitance', label: 'Sous-traitance' },
+    { value: 'frais_generaux', label: 'Frais généraux' },
+    { value: 'autre', label: 'Autre' },
+];
 
 export default function Budget() {
     const [projets, setProjets] = useState([]);
@@ -178,6 +203,12 @@ export default function Budget() {
                         </div>
                         <form onSubmit={handleAddDevis}>
                             <div className="form-group">
+                                <label>Rubrique *</label>
+                                <select className="form-select" required value={formDevis.rubrique} onChange={e => setFormDevis({ ...formDevis, rubrique: e.target.value })}>
+                                    {RUBRIQUES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
                                 <label>Désignation *</label>
                                 <input className="form-input" required value={formDevis.designation} onChange={e => setFormDevis({ ...formDevis, designation: e.target.value })} placeholder="Fondations en béton armé" />
                             </div>
@@ -213,18 +244,30 @@ export default function Budget() {
                         </div>
                         <form onSubmit={handleAddDepense}>
                             <div className="form-group">
+                                <label>Type *</label>
+                                <select className="form-select" required value={formDepense.type} onChange={e => setFormDepense({ ...formDepense, type: e.target.value })}>
+                                    {TYPES_DEPENSE.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
                                 <label>Libellé *</label>
                                 <input className="form-input" required value={formDepense.libelle} onChange={e => setFormDepense({ ...formDepense, libelle: e.target.value })} placeholder="Achat ciment" />
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Catégorie *</label>
-                                    <input className="form-input" required value={formDepense.categorie} onChange={e => setFormDepense({ ...formDepense, categorie: e.target.value })} placeholder="Matériaux" />
+                                    <select className="form-select" required value={formDepense.categorie} onChange={e => setFormDepense({ ...formDepense, categorie: e.target.value })}>
+                                        {CATEGORIES_DEPENSE.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                    </select>
                                 </div>
                                 <div className="form-group">
                                     <label>Montant (FCFA) *</label>
                                     <input className="form-input" type="number" required value={formDepense.montant} onChange={e => setFormDepense({ ...formDepense, montant: e.target.value })} placeholder="850000" />
                                 </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Date *</label>
+                                <input className="form-input" type="date" required value={formDepense.date} onChange={e => setFormDepense({ ...formDepense, date: e.target.value })} />
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
