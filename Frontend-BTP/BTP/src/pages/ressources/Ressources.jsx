@@ -3,460 +3,235 @@ import { useNavigate } from 'react-router-dom';
 import {
     getProjets, getPersonnel, createPersonnel, getEngins, createEngin,
     getSousTraitants, createSousTraitant, getPointages, createPointage,
+    getPersonnelProjet, getEnginsProjet, affecterEngin,
+    getSousTraitantsProjet, affecterSousTraitant,
 } from '../../api/api';
-import { Plus, X, HardHat, Truck, Briefcase, ClipboardCheck, Calendar } from 'lucide-react';
+import { Plus, X, HardHat, Truck, Briefcase, ClipboardCheck } from 'lucide-react';
 
 const emptyPersonnel = { nom: '', prenom: '', poste: '', categorie: 'ouvrier_qualifie', typeContrat: 'journalier', tauxJournalier: '', salaireMensuel: '', telephone: '' };
 const emptyEngin = { designation: '', immatriculation: '', marque: '', modele: '', type: 'propre', tauxJournalier: '' };
 const emptySousTraitant = { nom: '', nomGerant: '', specialite: 'gros_oeuvre', region: '', telephone: '', email: '' };
 const emptyPointage = { personnelId: '', date: new Date().toISOString().slice(0, 10), statut: 'present', heuresSupplementaires: '0', observations: '' };
+const emptyAffEngin = { enginId: '', dateDebut: new Date().toISOString().slice(0, 10), dateFin: '', observations: '' };
+const emptyAffST = { sousTraitantId: '', dateDebut: new Date().toISOString().slice(0, 10), dateFin: '', montantContrat: '', observations: '' };
 
 const categorieLabels = { encadrement: 'Encadrement', ouvrier_qualifie: 'Ouvrier qualifié', manoeuvre: 'Manœuvre', tacheronnage: 'Tâcheronnage', saisonnier: 'Saisonnier' };
 const contratLabels = { cdi: 'CDI', cdd: 'CDD', journalier: 'Journalier', tacheronnage: 'Tâcheronnage' };
 const statutEnginBadge = { disponible: 'badge-green', en_service: 'badge-blue', en_maintenance: 'badge-amber', hors_service: 'badge-gray' };
-const specialiteLabels = {
-    electricite: 'Électricité', plomberie: 'Plomberie', menuiserie_alu: 'Menuiserie Alu', menuiserie_bois: 'Menuiserie Bois',
-    peinture: 'Peinture', carrelage: 'Carrelage', etancheite: 'Étanchéité', vrd: 'VRD', terrassement: 'Terrassement',
-    gros_oeuvre: 'Gros œuvre', autre: 'Autre',
-};
-const statutPresenceLabels = {
-    present: 'Présent', absent: 'Absent', demi_journee: 'Demi-journée', conge: 'Congé', maladie: 'Maladie',
-};
-const statutPresenceBadge = {
-    present: 'badge-green', absent: 'badge-gray', demi_journee: 'badge-amber', conge: 'badge-blue', maladie: 'badge-amber',
-};
+const specialiteLabels = { electricite: 'Électricité', plomberie: 'Plomberie', menuiserie_alu: 'Menuiserie Alu', menuiserie_bois: 'Menuiserie Bois', peinture: 'Peinture', carrelage: 'Carrelage', etancheite: 'Étanchéité', vrd: 'VRD', terrassement: 'Terrassement', gros_oeuvre: 'Gros œuvre', autre: 'Autre' };
+const statutPresenceLabels = { present: 'Présent', absent: 'Absent', demi_journee: 'Demi-journée', conge: 'Congé', maladie: 'Maladie' };
+const statutPresenceBadge = { present: 'badge-green', absent: 'badge-gray', demi_journee: 'badge-amber', conge: 'badge-blue', maladie: 'badge-amber' };
 
 export default function Ressources() {
     const [tab, setTab] = useState('personnel');
-    const [personnel, setPersonnel] = useState([]);
-    const [engins, setEngins] = useState([]);
-    const [sousTraitants, setSousTraitants] = useState([]);
+    const [projets, setProjets] = useState([]);
+    const [projetId, setProjetId] = useState('');
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const navigate = useNavigate();
+
+    // Global resource lists (for dropdowns in modals)
+    const [allPersonnel, setAllPersonnel] = useState([]);
+    const [allEngins, setAllEngins] = useState([]);
+    const [allSousTraitants, setAllSousTraitants] = useState([]);
+
+    // Project-specific data
+    const [projetPersonnel, setProjetPersonnel] = useState([]);
+    const [projetEngins, setProjetEngins] = useState([]);
+    const [projetSousTraitants, setProjetSousTraitants] = useState([]);
+    const [pointages, setPointages] = useState([]);
+    const [loadingProjet, setLoadingProjet] = useState(false);
+
+    // Forms
     const [formPersonnel, setFormPersonnel] = useState(emptyPersonnel);
     const [formEngin, setFormEngin] = useState(emptyEngin);
     const [formSousTraitant, setFormSousTraitant] = useState(emptySousTraitant);
-    const navigate = useNavigate();
-
-    // ─── Pointages state ───
-    const [projets, setProjets] = useState([]);
-    const [projetId, setProjetId] = useState('');
-    const [pointages, setPointages] = useState([]);
-    const [loadingPointages, setLoadingPointages] = useState(false);
     const [formPointage, setFormPointage] = useState(emptyPointage);
+    const [formAffEngin, setFormAffEngin] = useState(emptyAffEngin);
+    const [formAffST, setFormAffST] = useState(emptyAffST);
 
-    // Load global resources + projects list
-    const loadAll = () => {
-        setLoading(true);
-        Promise.all([getPersonnel(), getEngins(), getSousTraitants(), getProjets()])
-            .then(([p, e, s, proj]) => {
-                setPersonnel(p);
-                setEngins(e);
-                setSousTraitants(s);
-                setProjets(proj);
-                if (proj.length > 0 && !projetId) setProjetId(proj[0].id);
-            })
-            .finally(() => setLoading(false));
-    };
-
-    useEffect(() => { loadAll(); }, []);
-
-    // Load pointages when project changes
-    const loadPointages = (pid) => {
-        if (!pid) return;
-        setLoadingPointages(true);
-        getPointages(pid)
-            .then(data => setPointages(data))
-            .finally(() => setLoadingPointages(false));
-    };
+    // What kind of modal? 'add-global' or 'affecter'
+    const [modalMode, setModalMode] = useState('affecter');
 
     useEffect(() => {
-        if (projetId && tab === 'pointages') loadPointages(projetId);
-    }, [projetId, tab]);
+        setLoading(true);
+        Promise.all([getProjets(), getPersonnel(), getEngins(), getSousTraitants()])
+            .then(([proj, p, e, s]) => {
+                setProjets(proj); setAllPersonnel(p); setAllEngins(e); setAllSousTraitants(s);
+                if (proj.length > 0) setProjetId(proj[0].id);
+            })
+            .finally(() => setLoading(false));
+    }, []);
 
-    const handleAddPersonnel = async (e) => {
-        e.preventDefault();
-        await createPersonnel({
-            ...formPersonnel,
-            tauxJournalier: formPersonnel.tauxJournalier ? Number(formPersonnel.tauxJournalier) : undefined,
-            salaireMensuel: formPersonnel.salaireMensuel ? Number(formPersonnel.salaireMensuel) : undefined,
-        });
-        setShowModal(false); setFormPersonnel(emptyPersonnel); loadAll();
+    const loadProjetData = (pid) => {
+        if (!pid) return;
+        setLoadingProjet(true);
+        Promise.all([getPersonnelProjet(pid), getEnginsProjet(pid), getSousTraitantsProjet(pid), getPointages(pid)])
+            .then(([p, e, s, pt]) => { setProjetPersonnel(p); setProjetEngins(e); setProjetSousTraitants(s); setPointages(pt); })
+            .finally(() => setLoadingProjet(false));
     };
 
-    const handleAddEngin = async (e) => {
-        e.preventDefault();
-        await createEngin({ ...formEngin, tauxJournalier: formEngin.tauxJournalier ? Number(formEngin.tauxJournalier) : undefined });
-        setShowModal(false); setFormEngin(emptyEngin); loadAll();
+    useEffect(() => { if (projetId) loadProjetData(projetId); }, [projetId]);
+
+    const reloadGlobals = () => {
+        Promise.all([getPersonnel(), getEngins(), getSousTraitants()])
+            .then(([p, e, s]) => { setAllPersonnel(p); setAllEngins(e); setAllSousTraitants(s); });
     };
 
-    const handleAddSousTraitant = async (e) => {
-        e.preventDefault();
-        await createSousTraitant(formSousTraitant);
-        setShowModal(false); setFormSousTraitant(emptySousTraitant); loadAll();
-    };
+    const openModal = (mode) => { setModalMode(mode); setShowModal(true); };
 
-    const handleAddPointage = async (e) => {
-        e.preventDefault();
-        await createPointage(projetId, {
-            ...formPointage,
-            heuresSupplementaires: Number(formPointage.heuresSupplementaires) || 0,
-        });
-        setShowModal(false);
-        setFormPointage(emptyPointage);
-        loadPointages(projetId);
-    };
+    // ─── Handlers ───
+    const handleAddPersonnel = async (e) => { e.preventDefault(); await createPersonnel({ ...formPersonnel, tauxJournalier: formPersonnel.tauxJournalier ? Number(formPersonnel.tauxJournalier) : undefined, salaireMensuel: formPersonnel.salaireMensuel ? Number(formPersonnel.salaireMensuel) : undefined }); setShowModal(false); setFormPersonnel(emptyPersonnel); reloadGlobals(); };
+    const handleAddEngin = async (e) => { e.preventDefault(); await createEngin({ ...formEngin, tauxJournalier: formEngin.tauxJournalier ? Number(formEngin.tauxJournalier) : undefined }); setShowModal(false); setFormEngin(emptyEngin); reloadGlobals(); };
+    const handleAddSousTraitant = async (e) => { e.preventDefault(); await createSousTraitant(formSousTraitant); setShowModal(false); setFormSousTraitant(emptySousTraitant); reloadGlobals(); };
+    const handleAddPointage = async (e) => { e.preventDefault(); await createPointage(projetId, { ...formPointage, heuresSupplementaires: Number(formPointage.heuresSupplementaires) || 0 }); setShowModal(false); setFormPointage(emptyPointage); loadProjetData(projetId); };
+    const handleAffecterEngin = async (e) => { e.preventDefault(); await affecterEngin(projetId, formAffEngin); setShowModal(false); setFormAffEngin(emptyAffEngin); loadProjetData(projetId); };
+    const handleAffecterST = async (e) => { e.preventDefault(); await affecterSousTraitant(projetId, { ...formAffST, montantContrat: formAffST.montantContrat ? Number(formAffST.montantContrat) : undefined }); setShowModal(false); setFormAffST(emptyAffST); loadProjetData(projetId); };
 
     const formatFCFA = (n) => n ? `${Number(n).toLocaleString('fr-FR')} FCFA` : '—';
     const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
 
-    // Determine if we show project selector (visible on pointages tab)
-    const showProjectSelector = tab === 'pointages';
-
-    // Button label for the add button
-    const getAddLabel = () => {
-        switch (tab) {
-            case 'personnel': return ' Employé';
-            case 'engins': return ' Engin';
-            case 'sous-traitants': return ' Sous-traitant';
-            case 'pointages': return ' Pointage';
-            default: return '';
-        }
-    };
-
-    // Can we add? For pointages we need a project selected
-    const canAdd = tab !== 'pointages' || projetId;
+    if (loading) return <div className="spinner" />;
+    if (projets.length === 0) return (
+        <div>
+            <div className="page-header"><div><h1>Ressources</h1></div></div>
+            <div className="empty-state"><p>Aucun projet trouvé. Crée d'abord un projet.</p><button className="btn btn-primary" onClick={() => navigate('/projets')}>Aller aux projets</button></div>
+        </div>
+    );
 
     return (
         <div>
+            {/* Header with project selector always visible */}
             <div className="page-header">
                 <div>
                     <h1>Ressources</h1>
-                    <p className="subtitle">Personnel, engins, sous-traitants et pointages par projet</p>
+                    <p className="subtitle">Ressources affectées par projet</p>
                 </div>
-                {/* Project selector — only visible on Pointages tab */}
-                {showProjectSelector && (
-                    <select
-                        id="ressources-project-selector"
-                        className="form-select"
-                        style={{ maxWidth: 340 }}
-                        value={projetId}
-                        onChange={e => setProjetId(e.target.value)}
-                    >
-                        {projets.length === 0 && <option value="">Aucun projet</option>}
-                        {projets.map(p => <option key={p.id} value={p.id}>{p.reference} — {p.intitule}</option>)}
-                    </select>
-                )}
+                <select className="form-select" style={{ maxWidth: 340 }} value={projetId} onChange={e => setProjetId(e.target.value)}>
+                    {projets.map(p => <option key={p.id} value={p.id}>{p.reference} — {p.intitule}</option>)}
+                </select>
             </div>
 
+            {/* Tabs */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                <button className={`btn btn-sm ${tab === 'personnel' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('personnel')}>
-                    <HardHat size={14} /> Personnel ({personnel.length})
-                </button>
-                <button className={`btn btn-sm ${tab === 'engins' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('engins')}>
-                    <Truck size={14} /> Engins ({engins.length})
-                </button>
-                <button className={`btn btn-sm ${tab === 'sous-traitants' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('sous-traitants')}>
-                    <Briefcase size={14} /> Sous-traitants ({sousTraitants.length})
-                </button>
-                <button className={`btn btn-sm ${tab === 'pointages' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('pointages')}>
-                    <ClipboardCheck size={14} /> Pointages
-                </button>
+                <button className={`btn btn-sm ${tab === 'personnel' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('personnel')}><HardHat size={14} /> Personnel ({projetPersonnel.length})</button>
+                <button className={`btn btn-sm ${tab === 'engins' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('engins')}><Truck size={14} /> Engins ({projetEngins.length})</button>
+                <button className={`btn btn-sm ${tab === 'sous-traitants' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('sous-traitants')}><Briefcase size={14} /> Sous-traitants ({projetSousTraitants.length})</button>
+                <button className={`btn btn-sm ${tab === 'pointages' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('pointages')}><ClipboardCheck size={14} /> Pointages ({pointages.length})</button>
             </div>
 
-            {canAdd && (
-                <div className="page-header" style={{ marginBottom: 12 }}>
-                    <div />
-                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                        <Plus size={18} />
-                        {getAddLabel()}
-                    </button>
+            {/* Action buttons */}
+            <div className="page-header" style={{ marginBottom: 12 }}>
+                <div />
+                <div style={{ display: 'flex', gap: 8 }}>
+                    {tab === 'personnel' && <button className="btn btn-primary" onClick={() => openModal('pointage')}><Plus size={16} /> Pointer un employé</button>}
+                    {tab === 'engins' && <button className="btn btn-primary" onClick={() => openModal('affecter-engin')}><Plus size={16} /> Affecter un engin</button>}
+                    {tab === 'sous-traitants' && <button className="btn btn-primary" onClick={() => openModal('affecter-st')}><Plus size={16} /> Affecter un sous-traitant</button>}
+                    {tab === 'pointages' && <button className="btn btn-primary" onClick={() => openModal('pointage')}><Plus size={16} /> Pointage</button>}
                 </div>
-            )}
+            </div>
 
-            {loading ? <div className="spinner" /> : (
+            {/* Tables */}
+            {loadingProjet ? <div className="spinner" /> : (
                 <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
                     {tab === 'personnel' && (
                         <table className="data-table">
                             <thead><tr><th>Nom</th><th>Poste</th><th>Catégorie</th><th>Contrat</th><th>Taux/Salaire</th><th>Téléphone</th></tr></thead>
                             <tbody>
-                                {personnel.map(p => (
-                                    <tr key={p.id}>
-                                        <td style={{ fontWeight: 600 }}>{p.prenom} {p.nom}</td>
-                                        <td>{p.poste}</td>
-                                        <td>{categorieLabels[p.categorie] || p.categorie}</td>
-                                        <td><span className="badge badge-teal">{contratLabels[p.typeContrat] || p.typeContrat}</span></td>
-                                        <td className="montant">{p.salaireMensuel ? `${formatFCFA(p.salaireMensuel)}/mois` : `${formatFCFA(p.tauxJournalier)}/jour`}</td>
-                                        <td>{p.telephone || '—'}</td>
-                                    </tr>
+                                {projetPersonnel.map(p => (
+                                    <tr key={p.id}><td style={{ fontWeight: 600 }}>{p.prenom} {p.nom}</td><td>{p.poste}</td><td>{categorieLabels[p.categorie] || p.categorie}</td><td><span className="badge badge-teal">{contratLabels[p.typeContrat] || p.typeContrat}</span></td><td className="montant">{p.salaireMensuel ? `${formatFCFA(p.salaireMensuel)}/mois` : `${formatFCFA(p.tauxJournalier)}/jour`}</td><td>{p.telephone || '—'}</td></tr>
                                 ))}
-                                {personnel.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun employé enregistré</td></tr>}
+                                {projetPersonnel.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun employé affecté à ce projet. Utilisez "Pointer un employé" pour en ajouter.</td></tr>}
                             </tbody>
                         </table>
                     )}
-
                     {tab === 'engins' && (
                         <table className="data-table">
-                            <thead><tr><th>Désignation</th><th>Immatriculation</th><th>Type</th><th>Statut</th><th>Taux journalier</th></tr></thead>
+                            <thead><tr><th>Désignation</th><th>Immatriculation</th><th>Type</th><th>Date début</th><th>Date fin</th><th>Observations</th></tr></thead>
                             <tbody>
-                                {engins.map(e => (
-                                    <tr key={e.id}>
-                                        <td style={{ fontWeight: 600 }}>{e.designation}</td>
-                                        <td>{e.immatriculation || '—'}</td>
-                                        <td style={{ textTransform: 'capitalize' }}>{e.type}</td>
-                                        <td><span className={`badge ${statutEnginBadge[e.statut] || 'badge-gray'}`}>{e.statut?.replace('_', ' ')}</span></td>
-                                        <td className="montant">{formatFCFA(e.tauxJournalier)}</td>
-                                    </tr>
+                                {projetEngins.map(a => (
+                                    <tr key={a.id}><td style={{ fontWeight: 600 }}>{a.engin?.designation}</td><td>{a.engin?.immatriculation || '—'}</td><td style={{ textTransform: 'capitalize' }}>{a.engin?.type}</td><td>{formatDate(a.dateDebut)}</td><td>{formatDate(a.dateFin)}</td><td>{a.observations || '—'}</td></tr>
                                 ))}
-                                {engins.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun engin enregistré</td></tr>}
+                                {projetEngins.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun engin affecté à ce projet</td></tr>}
                             </tbody>
                         </table>
                     )}
-
                     {tab === 'sous-traitants' && (
                         <table className="data-table">
-                            <thead><tr><th>Raison sociale</th><th>Spécialité</th><th>Région</th><th>Téléphone</th><th>Évaluation</th></tr></thead>
+                            <thead><tr><th>Raison sociale</th><th>Spécialité</th><th>Montant contrat</th><th>Date début</th><th>Date fin</th><th>Observations</th></tr></thead>
                             <tbody>
-                                {sousTraitants.map(s => (
-                                    <tr key={s.id}>
-                                        <td style={{ fontWeight: 600 }}>{s.nom}</td>
-                                        <td><span className="badge badge-teal">{specialiteLabels[s.specialite] || s.specialite}</span></td>
-                                        <td>{s.region || '—'}</td>
-                                        <td>{s.telephone || '—'}</td>
-                                        <td>{s.evaluation ? `${s.evaluation}/10` : '—'}</td>
-                                    </tr>
+                                {projetSousTraitants.map(a => (
+                                    <tr key={a.id}><td style={{ fontWeight: 600 }}>{a.sousTraitant?.nom}</td><td><span className="badge badge-teal">{specialiteLabels[a.sousTraitant?.specialite] || a.sousTraitant?.specialite}</span></td><td className="montant">{formatFCFA(a.montantContrat)}</td><td>{formatDate(a.dateDebut)}</td><td>{formatDate(a.dateFin)}</td><td>{a.observations || '—'}</td></tr>
                                 ))}
-                                {sousTraitants.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun sous-traitant enregistré</td></tr>}
+                                {projetSousTraitants.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun sous-traitant affecté à ce projet</td></tr>}
                             </tbody>
                         </table>
                     )}
-
                     {tab === 'pointages' && (
-                        <>
-                            {projets.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-                                    <Calendar size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
-                                    <p>Aucun projet trouvé. Crée d'abord un projet pour gérer les pointages.</p>
-                                    <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={() => navigate('/projets')}>Aller aux projets</button>
-                                </div>
-                            ) : loadingPointages ? (
-                                <div style={{ padding: 60, textAlign: 'center' }}><div className="spinner" /></div>
-                            ) : (
-                                <table className="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Employé</th>
-                                            <th>Date</th>
-                                            <th>Statut</th>
-                                            <th>Heures sup.</th>
-                                            <th>Montant</th>
-                                            <th>Observations</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {pointages.map(pt => (
-                                            <tr key={pt.id}>
-                                                <td style={{ fontWeight: 600 }}>
-                                                    {pt.personnel ? `${pt.personnel.prenom} ${pt.personnel.nom}` : '—'}
-                                                </td>
-                                                <td>{formatDate(pt.date)}</td>
-                                                <td>
-                                                    <span className={`badge ${statutPresenceBadge[pt.statut] || 'badge-gray'}`}>
-                                                        {statutPresenceLabels[pt.statut] || pt.statut}
-                                                    </span>
-                                                </td>
-                                                <td>{pt.heuresSupplementaires || 0}h</td>
-                                                <td className="montant">{formatFCFA(pt.montantJournalier)}</td>
-                                                <td>{pt.observations || '—'}</td>
-                                            </tr>
-                                        ))}
-                                        {pointages.length === 0 && (
-                                            <tr>
-                                                <td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                                                    Aucun pointage pour ce projet
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            )}
-                        </>
+                        <table className="data-table">
+                            <thead><tr><th>Employé</th><th>Date</th><th>Statut</th><th>Heures sup.</th><th>Montant</th><th>Observations</th></tr></thead>
+                            <tbody>
+                                {pointages.map(pt => (
+                                    <tr key={pt.id}><td style={{ fontWeight: 600 }}>{pt.personnel ? `${pt.personnel.prenom} ${pt.personnel.nom}` : '—'}</td><td>{formatDate(pt.date)}</td><td><span className={`badge ${statutPresenceBadge[pt.statut] || 'badge-gray'}`}>{statutPresenceLabels[pt.statut] || pt.statut}</span></td><td>{pt.heuresSupplementaires || 0}h</td><td className="montant">{formatFCFA(pt.montantJournalier)}</td><td>{pt.observations || '—'}</td></tr>
+                                ))}
+                                {pointages.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Aucun pointage pour ce projet</td></tr>}
+                            </tbody>
+                        </table>
                     )}
                 </div>
             )}
 
-            {/* ─── Modal : Personnel ─── */}
-            {showModal && tab === 'personnel' && (
+            {/* ─── Modal: Pointage ─── */}
+            {showModal && modalMode === 'pointage' && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header"><h2>Nouvel employé</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button></div>
-                        <form onSubmit={handleAddPersonnel}>
-                            <div className="form-row">
-                                <div className="form-group"><label>Nom *</label><input className="form-input" required value={formPersonnel.nom} onChange={e => setFormPersonnel({ ...formPersonnel, nom: e.target.value })} /></div>
-                                <div className="form-group"><label>Prénom *</label><input className="form-input" required value={formPersonnel.prenom} onChange={e => setFormPersonnel({ ...formPersonnel, prenom: e.target.value })} /></div>
-                            </div>
-                            <div className="form-group"><label>Poste *</label><input className="form-input" required value={formPersonnel.poste} onChange={e => setFormPersonnel({ ...formPersonnel, poste: e.target.value })} placeholder="Maçon, Chef de chantier..." /></div>
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Catégorie *</label>
-                                    <select className="form-select" value={formPersonnel.categorie} onChange={e => setFormPersonnel({ ...formPersonnel, categorie: e.target.value })}>
-                                        {Object.entries(categorieLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Type de contrat *</label>
-                                    <select className="form-select" value={formPersonnel.typeContrat} onChange={e => setFormPersonnel({ ...formPersonnel, typeContrat: e.target.value })}>
-                                        {Object.entries(contratLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Taux journalier (FCFA)</label><input className="form-input" type="number" value={formPersonnel.tauxJournalier} onChange={e => setFormPersonnel({ ...formPersonnel, tauxJournalier: e.target.value })} /></div>
-                                <div className="form-group"><label>Salaire mensuel (FCFA)</label><input className="form-input" type="number" value={formPersonnel.salaireMensuel} onChange={e => setFormPersonnel({ ...formPersonnel, salaireMensuel: e.target.value })} /></div>
-                            </div>
-                            <div className="form-group"><label>Téléphone</label><input className="form-input" value={formPersonnel.telephone} onChange={e => setFormPersonnel({ ...formPersonnel, telephone: e.target.value })} /></div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                                <button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── Modal : Engin ─── */}
-            {showModal && tab === 'engins' && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header"><h2>Nouvel engin</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button></div>
-                        <form onSubmit={handleAddEngin}>
-                            <div className="form-group"><label>Désignation *</label><input className="form-input" required value={formEngin.designation} onChange={e => setFormEngin({ ...formEngin, designation: e.target.value })} placeholder="Pelle mécanique, Niveleuse..." /></div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Immatriculation</label><input className="form-input" value={formEngin.immatriculation} onChange={e => setFormEngin({ ...formEngin, immatriculation: e.target.value })} /></div>
-                                <div className="form-group">
-                                    <label>Type *</label>
-                                    <select className="form-select" value={formEngin.type} onChange={e => setFormEngin({ ...formEngin, type: e.target.value })}>
-                                        <option value="propre">Propre</option>
-                                        <option value="loue">Loué</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Marque</label><input className="form-input" value={formEngin.marque} onChange={e => setFormEngin({ ...formEngin, marque: e.target.value })} /></div>
-                                <div className="form-group"><label>Modèle</label><input className="form-input" value={formEngin.modele} onChange={e => setFormEngin({ ...formEngin, modele: e.target.value })} /></div>
-                            </div>
-                            <div className="form-group"><label>Taux journalier (FCFA)</label><input className="form-input" type="number" value={formEngin.tauxJournalier} onChange={e => setFormEngin({ ...formEngin, tauxJournalier: e.target.value })} /></div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                                <button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── Modal : Sous-traitant ─── */}
-            {showModal && tab === 'sous-traitants' && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header"><h2>Nouveau sous-traitant</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button></div>
-                        <form onSubmit={handleAddSousTraitant}>
-                            <div className="form-group"><label>Raison sociale *</label><input className="form-input" required value={formSousTraitant.nom} onChange={e => setFormSousTraitant({ ...formSousTraitant, nom: e.target.value })} /></div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Nom du gérant</label><input className="form-input" value={formSousTraitant.nomGerant} onChange={e => setFormSousTraitant({ ...formSousTraitant, nomGerant: e.target.value })} /></div>
-                                <div className="form-group">
-                                    <label>Spécialité *</label>
-                                    <select className="form-select" value={formSousTraitant.specialite} onChange={e => setFormSousTraitant({ ...formSousTraitant, specialite: e.target.value })}>
-                                        {Object.entries(specialiteLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Région</label><input className="form-input" value={formSousTraitant.region} onChange={e => setFormSousTraitant({ ...formSousTraitant, region: e.target.value })} /></div>
-                                <div className="form-group"><label>Téléphone</label><input className="form-input" value={formSousTraitant.telephone} onChange={e => setFormSousTraitant({ ...formSousTraitant, telephone: e.target.value })} /></div>
-                            </div>
-                            <div className="form-group"><label>Email</label><input className="form-input" type="email" value={formSousTraitant.email} onChange={e => setFormSousTraitant({ ...formSousTraitant, email: e.target.value })} /></div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                                <button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── Modal : Pointage ─── */}
-            {showModal && tab === 'pointages' && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Nouveau pointage</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
-                        </div>
+                        <div className="modal-header"><h2>Nouveau pointage</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button></div>
                         <form onSubmit={handleAddPointage}>
-                            <div className="form-group">
-                                <label>Employé *</label>
-                                <select
-                                    className="form-select"
-                                    required
-                                    value={formPointage.personnelId}
-                                    onChange={e => setFormPointage({ ...formPointage, personnelId: e.target.value })}
-                                >
-                                    <option value="">— Sélectionner un employé —</option>
-                                    {personnel.map(p => (
-                                        <option key={p.id} value={p.id}>{p.prenom} {p.nom} — {p.poste}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <div className="form-group"><label>Employé *</label><select className="form-select" required value={formPointage.personnelId} onChange={e => setFormPointage({ ...formPointage, personnelId: e.target.value })}><option value="">— Sélectionner —</option>{allPersonnel.map(p => <option key={p.id} value={p.id}>{p.prenom} {p.nom} — {p.poste}</option>)}</select></div>
                             <div className="form-row">
-                                <div className="form-group">
-                                    <label>Date *</label>
-                                    <input
-                                        className="form-input"
-                                        type="date"
-                                        required
-                                        value={formPointage.date}
-                                        onChange={e => setFormPointage({ ...formPointage, date: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Statut *</label>
-                                    <select
-                                        className="form-select"
-                                        required
-                                        value={formPointage.statut}
-                                        onChange={e => setFormPointage({ ...formPointage, statut: e.target.value })}
-                                    >
-                                        {Object.entries(statutPresenceLabels).map(([k, v]) => (
-                                            <option key={k} value={k}>{v}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <div className="form-group"><label>Date *</label><input className="form-input" type="date" required value={formPointage.date} onChange={e => setFormPointage({ ...formPointage, date: e.target.value })} /></div>
+                                <div className="form-group"><label>Statut *</label><select className="form-select" value={formPointage.statut} onChange={e => setFormPointage({ ...formPointage, statut: e.target.value })}>{Object.entries(statutPresenceLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
                             </div>
-                            <div className="form-group">
-                                <label>Heures supplémentaires</label>
-                                <input
-                                    className="form-input"
-                                    type="number"
-                                    min="0"
-                                    step="0.5"
-                                    value={formPointage.heuresSupplementaires}
-                                    onChange={e => setFormPointage({ ...formPointage, heuresSupplementaires: e.target.value })}
-                                />
+                            <div className="form-group"><label>Heures supplémentaires</label><input className="form-input" type="number" min="0" step="0.5" value={formPointage.heuresSupplementaires} onChange={e => setFormPointage({ ...formPointage, heuresSupplementaires: e.target.value })} /></div>
+                            <div className="form-group"><label>Observations</label><input className="form-input" value={formPointage.observations} onChange={e => setFormPointage({ ...formPointage, observations: e.target.value })} /></div>
+                            <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button><button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button></div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Modal: Affecter Engin ─── */}
+            {showModal && modalMode === 'affecter-engin' && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header"><h2>Affecter un engin</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button></div>
+                        <form onSubmit={handleAffecterEngin}>
+                            <div className="form-group"><label>Engin *</label><select className="form-select" required value={formAffEngin.enginId} onChange={e => setFormAffEngin({ ...formAffEngin, enginId: e.target.value })}><option value="">— Sélectionner —</option>{allEngins.map(e => <option key={e.id} value={e.id}>{e.designation} {e.immatriculation ? `(${e.immatriculation})` : ''}</option>)}</select></div>
+                            <div className="form-row">
+                                <div className="form-group"><label>Date début *</label><input className="form-input" type="date" required value={formAffEngin.dateDebut} onChange={e => setFormAffEngin({ ...formAffEngin, dateDebut: e.target.value })} /></div>
+                                <div className="form-group"><label>Date fin</label><input className="form-input" type="date" value={formAffEngin.dateFin} onChange={e => setFormAffEngin({ ...formAffEngin, dateFin: e.target.value })} /></div>
                             </div>
-                            <div className="form-group">
-                                <label>Observations</label>
-                                <input
-                                    className="form-input"
-                                    value={formPointage.observations}
-                                    onChange={e => setFormPointage({ ...formPointage, observations: e.target.value })}
-                                    placeholder="Remarques éventuelles..."
-                                />
+                            <div className="form-group"><label>Observations</label><input className="form-input" value={formAffEngin.observations} onChange={e => setFormAffEngin({ ...formAffEngin, observations: e.target.value })} /></div>
+                            <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button><button type="submit" className="btn btn-primary"><Plus size={16} /> Affecter</button></div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Modal: Affecter Sous-traitant ─── */}
+            {showModal && modalMode === 'affecter-st' && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header"><h2>Affecter un sous-traitant</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button></div>
+                        <form onSubmit={handleAffecterST}>
+                            <div className="form-group"><label>Sous-traitant *</label><select className="form-select" required value={formAffST.sousTraitantId} onChange={e => setFormAffST({ ...formAffST, sousTraitantId: e.target.value })}><option value="">— Sélectionner —</option>{allSousTraitants.map(s => <option key={s.id} value={s.id}>{s.nom} — {specialiteLabels[s.specialite] || s.specialite}</option>)}</select></div>
+                            <div className="form-row">
+                                <div className="form-group"><label>Date début *</label><input className="form-input" type="date" required value={formAffST.dateDebut} onChange={e => setFormAffST({ ...formAffST, dateDebut: e.target.value })} /></div>
+                                <div className="form-group"><label>Date fin</label><input className="form-input" type="date" value={formAffST.dateFin} onChange={e => setFormAffST({ ...formAffST, dateFin: e.target.value })} /></div>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                                <button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button>
-                            </div>
+                            <div className="form-group"><label>Montant contrat (FCFA)</label><input className="form-input" type="number" value={formAffST.montantContrat} onChange={e => setFormAffST({ ...formAffST, montantContrat: e.target.value })} /></div>
+                            <div className="form-group"><label>Observations</label><input className="form-input" value={formAffST.observations} onChange={e => setFormAffST({ ...formAffST, observations: e.target.value })} /></div>
+                            <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button><button type="submit" className="btn btn-primary"><Plus size={16} /> Affecter</button></div>
                         </form>
                     </div>
                 </div>

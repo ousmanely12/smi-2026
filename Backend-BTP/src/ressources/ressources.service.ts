@@ -5,6 +5,8 @@ import { Personnel, SMIG_JOURNALIER_2026 } from './entities/personnel.entity';
 import { Pointage, StatutPresence } from './entities/pointage.entity';
 import { Engin } from './entities/engin.entity';
 import { SousTraitant } from './entities/sous-traitant.entity';
+import { AffectationEngin } from './entities/affectation-engin.entity';
+import { AffectationSousTraitant } from './entities/affectation-sous-traitant.entity';
 
 @Injectable()
 export class RessourcesService {
@@ -13,6 +15,8 @@ export class RessourcesService {
     @InjectRepository(Pointage) private pointageRepo: Repository<Pointage>,
     @InjectRepository(Engin) private enginRepo: Repository<Engin>,
     @InjectRepository(SousTraitant) private sousTraitantRepo: Repository<SousTraitant>,
+    @InjectRepository(AffectationEngin) private affEnginRepo: Repository<AffectationEngin>,
+    @InjectRepository(AffectationSousTraitant) private affSTRepo: Repository<AffectationSousTraitant>,
   ) {}
 
   // ─── PERSONNEL ────────────────────────────────────────────────────────────
@@ -27,6 +31,22 @@ export class RessourcesService {
     await this.findPersonnel(id);
     await this.personnelRepo.update(id, dto);
     return this.personnelRepo.findOneBy({ id });
+  }
+
+  // Personnel affecté à un projet (déduit des pointages)
+  async getPersonnelProjet(projetId: string): Promise<Personnel[]> {
+    const pointages = await this.pointageRepo.find({
+      where: { projet: { id: projetId } },
+      relations: { personnel: true },
+    });
+    // Dédoublonner par personnel ID
+    const map = new Map<string, Personnel>();
+    for (const pt of pointages) {
+      if (pt.personnel && !map.has(pt.personnel.id)) {
+        map.set(pt.personnel.id, pt.personnel);
+      }
+    }
+    return Array.from(map.values());
   }
 
   // ─── POINTAGE ─────────────────────────────────────────────────────────────
@@ -64,7 +84,46 @@ export class RessourcesService {
   createEngin(dto: Partial<Engin>) { return this.enginRepo.save(this.enginRepo.create(dto)); }
   findAllEngins() { return this.enginRepo.find(); }
 
+  // Affectation engins ↔ projet
+  async affecterEngin(dto: { enginId: string; projetId: string; dateDebut: string; dateFin?: string; observations?: string }) {
+    const aff = this.affEnginRepo.create({
+      engin: { id: dto.enginId } as any,
+      projet: { id: dto.projetId } as any,
+      dateDebut: dto.dateDebut as any,
+      dateFin: dto.dateFin as any,
+      observations: dto.observations,
+    });
+    return this.affEnginRepo.save(aff);
+  }
+
+  getEnginsProjet(projetId: string) {
+    return this.affEnginRepo.find({
+      where: { projet: { id: projetId } },
+      order: { dateDebut: 'DESC' },
+    });
+  }
+
   // ─── SOUS-TRAITANTS ───────────────────────────────────────────────────────
   createSousTraitant(dto: Partial<SousTraitant>) { return this.sousTraitantRepo.save(this.sousTraitantRepo.create(dto)); }
   findAllSousTraitants() { return this.sousTraitantRepo.find({ where: { actif: true } }); }
+
+  // Affectation sous-traitants ↔ projet
+  async affecterSousTraitant(dto: { sousTraitantId: string; projetId: string; dateDebut: string; dateFin?: string; montantContrat?: number; observations?: string }) {
+    const aff = this.affSTRepo.create({
+      sousTraitant: { id: dto.sousTraitantId } as any,
+      projet: { id: dto.projetId } as any,
+      dateDebut: dto.dateDebut as any,
+      dateFin: dto.dateFin as any,
+      montantContrat: dto.montantContrat,
+      observations: dto.observations,
+    });
+    return this.affSTRepo.save(aff);
+  }
+
+  getSousTraitantsProjet(projetId: string) {
+    return this.affSTRepo.find({
+      where: { projet: { id: projetId } },
+      order: { dateDebut: 'DESC' },
+    });
+  }
 }

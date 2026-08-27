@@ -7,13 +7,19 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class RessourcesController {
   constructor(private readonly ressourcesService: RessourcesService) {}
 
-  // ─── PERSONNEL ────────────────────────────────────────────────────────
+  // ─── PERSONNEL (global) ──────────────────────────────────────────────────
   @Post('personnel') createPersonnel(@Body() dto: any) { return this.ressourcesService.createPersonnel(dto); }
   @Get('personnel') findAllPersonnel() { return this.ressourcesService.findAllPersonnel(); }
   @Get('personnel/:id') findPersonnel(@Param('id') id: string) { return this.ressourcesService.findPersonnel(id); }
   @Patch('personnel/:id') updatePersonnel(@Param('id') id: string, @Body() dto: any) { return this.ressourcesService.updatePersonnel(id, dto); }
 
-  // ─── POINTAGE ─────────────────────────────────────────────────────────
+  // Personnel d'un projet (via pointages)
+  @Get('projets/:projetId/personnel')
+  getPersonnelProjet(@Param('projetId') projetId: string) {
+    return this.ressourcesService.getPersonnelProjet(projetId);
+  }
+
+  // ─── POINTAGE ─────────────────────────────────────────────────────────────
   @Post('projets/:projetId/pointages')
   createPointage(@Param('projetId') projetId: string, @Body() dto: any) {
     return this.ressourcesService.createPointage({ ...dto, projetId });
@@ -33,11 +39,33 @@ export class RessourcesController {
     return this.ressourcesService.getMasseSalariale(projetId, debut, fin);
   }
 
-  // ─── ENGINS ───────────────────────────────────────────────────────────
+  // ─── ENGINS (global) ──────────────────────────────────────────────────────
   @Post('engins') createEngin(@Body() dto: any) { return this.ressourcesService.createEngin(dto); }
   @Get('engins') findAllEngins() { return this.ressourcesService.findAllEngins(); }
 
-  // ─── SOUS-TRAITANTS ───────────────────────────────────────────────────
+  // Engins affectés à un projet
+  @Post('projets/:projetId/engins')
+  affecterEngin(@Param('projetId') projetId: string, @Body() dto: any) {
+    return this.ressourcesService.affecterEngin({ ...dto, projetId });
+  }
+
+  @Get('projets/:projetId/engins')
+  getEnginsProjet(@Param('projetId') projetId: string) {
+    return this.ressourcesService.getEnginsProjet(projetId);
+  }
+
+  // ─── SOUS-TRAITANTS (global) ──────────────────────────────────────────────
   @Post('sous-traitants') createSousTraitant(@Body() dto: any) { return this.ressourcesService.createSousTraitant(dto); }
   @Get('sous-traitants') findAllSousTraitants() { return this.ressourcesService.findAllSousTraitants(); }
+
+  // Sous-traitants affectés à un projet
+  @Post('projets/:projetId/sous-traitants')
+  affecterSousTraitant(@Param('projetId') projetId: string, @Body() dto: any) {
+    return this.ressourcesService.affecterSousTraitant({ ...dto, projetId });
+  }
+
+  @Get('projets/:projetId/sous-traitants')
+  getSousTraitantsProjet(@Param('projetId') projetId: string) {
+    return this.ressourcesService.getSousTraitantsProjet(projetId);
+  }
 }

@@ -82,7 +82,7 @@ export const getAvenants = (pid) => api(`/projets/${pid}/avenants`);
 export const addAvenant = (pid, data) => api(`/projets/${pid}/avenants`, { method: 'POST', body: data });
 export const getBudgetKpi = (pid) => api(`/projets/${pid}/budget`);
 
-// Ressources
+// Ressources (globales)
 export const getPersonnel = () => api('/personnel');
 export const createPersonnel = (data) => api('/personnel', { method: 'POST', body: data });
 export const getPointages = (pid) => api(`/projets/${pid}/pointages`);
@@ -91,6 +91,13 @@ export const getEngins = () => api('/engins');
 export const createEngin = (data) => api('/engins', { method: 'POST', body: data });
 export const getSousTraitants = () => api('/sous-traitants');
 export const createSousTraitant = (data) => api('/sous-traitants', { method: 'POST', body: data });
+
+// Ressources par projet
+export const getPersonnelProjet = (pid) => api(`/projets/${pid}/personnel`);
+export const getEnginsProjet = (pid) => api(`/projets/${pid}/engins`);
+export const affecterEngin = (pid, data) => api(`/projets/${pid}/engins`, { method: 'POST', body: data });
+export const getSousTraitantsProjet = (pid) => api(`/projets/${pid}/sous-traitants`);
+export const affecterSousTraitant = (pid, data) => api(`/projets/${pid}/sous-traitants`, { method: 'POST', body: data });
 
 // Suivi chantier
 export const getJournaux = (pid) => api(`/projets/${pid}/journaux`);
