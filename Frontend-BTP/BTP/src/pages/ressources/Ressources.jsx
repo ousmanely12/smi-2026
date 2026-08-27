@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { getPersonnel, createPersonnel, getEngins, createEngin, getSousTraitants, createSousTraitant } from '../../api/api';
-import { Plus, X, HardHat, Truck, Briefcase } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+    getProjets, getPersonnel, createPersonnel, getEngins, createEngin,
+    getSousTraitants, createSousTraitant, getPointages, createPointage,
+} from '../../api/api';
+import { Plus, X, HardHat, Truck, Briefcase, ClipboardCheck, Calendar } from 'lucide-react';
 
 const emptyPersonnel = { nom: '', prenom: '', poste: '', categorie: 'ouvrier_qualifie', typeContrat: 'journalier', tauxJournalier: '', salaireMensuel: '', telephone: '' };
 const emptyEngin = { designation: '', immatriculation: '', marque: '', modele: '', type: 'propre', tauxJournalier: '' };
 const emptySousTraitant = { nom: '', nomGerant: '', specialite: 'gros_oeuvre', region: '', telephone: '', email: '' };
+const emptyPointage = { personnelId: '', date: new Date().toISOString().slice(0, 10), statut: 'present', heuresSupplementaires: '0', observations: '' };
 
 const categorieLabels = { encadrement: 'Encadrement', ouvrier_qualifie: 'Ouvrier qualifié', manoeuvre: 'Manœuvre', tacheronnage: 'Tâcheronnage', saisonnier: 'Saisonnier' };
 const contratLabels = { cdi: 'CDI', cdd: 'CDD', journalier: 'Journalier', tacheronnage: 'Tâcheronnage' };
@@ -13,6 +18,12 @@ const specialiteLabels = {
     electricite: 'Électricité', plomberie: 'Plomberie', menuiserie_alu: 'Menuiserie Alu', menuiserie_bois: 'Menuiserie Bois',
     peinture: 'Peinture', carrelage: 'Carrelage', etancheite: 'Étanchéité', vrd: 'VRD', terrassement: 'Terrassement',
     gros_oeuvre: 'Gros œuvre', autre: 'Autre',
+};
+const statutPresenceLabels = {
+    present: 'Présent', absent: 'Absent', demi_journee: 'Demi-journée', conge: 'Congé', maladie: 'Maladie',
+};
+const statutPresenceBadge = {
+    present: 'badge-green', absent: 'badge-gray', demi_journee: 'badge-amber', conge: 'badge-blue', maladie: 'badge-amber',
 };
 
 export default function Ressources() {
@@ -25,15 +36,43 @@ export default function Ressources() {
     const [formPersonnel, setFormPersonnel] = useState(emptyPersonnel);
     const [formEngin, setFormEngin] = useState(emptyEngin);
     const [formSousTraitant, setFormSousTraitant] = useState(emptySousTraitant);
+    const navigate = useNavigate();
 
+    // ─── Pointages state ───
+    const [projets, setProjets] = useState([]);
+    const [projetId, setProjetId] = useState('');
+    const [pointages, setPointages] = useState([]);
+    const [loadingPointages, setLoadingPointages] = useState(false);
+    const [formPointage, setFormPointage] = useState(emptyPointage);
+
+    // Load global resources + projects list
     const loadAll = () => {
         setLoading(true);
-        Promise.all([getPersonnel(), getEngins(), getSousTraitants()])
-            .then(([p, e, s]) => { setPersonnel(p); setEngins(e); setSousTraitants(s); })
+        Promise.all([getPersonnel(), getEngins(), getSousTraitants(), getProjets()])
+            .then(([p, e, s, proj]) => {
+                setPersonnel(p);
+                setEngins(e);
+                setSousTraitants(s);
+                setProjets(proj);
+                if (proj.length > 0 && !projetId) setProjetId(proj[0].id);
+            })
             .finally(() => setLoading(false));
     };
 
     useEffect(() => { loadAll(); }, []);
+
+    // Load pointages when project changes
+    const loadPointages = (pid) => {
+        if (!pid) return;
+        setLoadingPointages(true);
+        getPointages(pid)
+            .then(data => setPointages(data))
+            .finally(() => setLoadingPointages(false));
+    };
+
+    useEffect(() => {
+        if (projetId && tab === 'pointages') loadPointages(projetId);
+    }, [projetId, tab]);
 
     const handleAddPersonnel = async (e) => {
         e.preventDefault();
@@ -57,18 +96,60 @@ export default function Ressources() {
         setShowModal(false); setFormSousTraitant(emptySousTraitant); loadAll();
     };
 
+    const handleAddPointage = async (e) => {
+        e.preventDefault();
+        await createPointage(projetId, {
+            ...formPointage,
+            heuresSupplementaires: Number(formPointage.heuresSupplementaires) || 0,
+        });
+        setShowModal(false);
+        setFormPointage(emptyPointage);
+        loadPointages(projetId);
+    };
+
     const formatFCFA = (n) => n ? `${Number(n).toLocaleString('fr-FR')} FCFA` : '—';
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+
+    // Determine if we show project selector (visible on pointages tab)
+    const showProjectSelector = tab === 'pointages';
+
+    // Button label for the add button
+    const getAddLabel = () => {
+        switch (tab) {
+            case 'personnel': return ' Employé';
+            case 'engins': return ' Engin';
+            case 'sous-traitants': return ' Sous-traitant';
+            case 'pointages': return ' Pointage';
+            default: return '';
+        }
+    };
+
+    // Can we add? For pointages we need a project selected
+    const canAdd = tab !== 'pointages' || projetId;
 
     return (
         <div>
             <div className="page-header">
                 <div>
                     <h1>Ressources</h1>
-                    <p className="subtitle">Personnel, engins et sous-traitants de l'entreprise</p>
+                    <p className="subtitle">Personnel, engins, sous-traitants et pointages par projet</p>
                 </div>
+                {/* Project selector — only visible on Pointages tab */}
+                {showProjectSelector && (
+                    <select
+                        id="ressources-project-selector"
+                        className="form-select"
+                        style={{ maxWidth: 340 }}
+                        value={projetId}
+                        onChange={e => setProjetId(e.target.value)}
+                    >
+                        {projets.length === 0 && <option value="">Aucun projet</option>}
+                        {projets.map(p => <option key={p.id} value={p.id}>{p.reference} — {p.intitule}</option>)}
+                    </select>
+                )}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
                 <button className={`btn btn-sm ${tab === 'personnel' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('personnel')}>
                     <HardHat size={14} /> Personnel ({personnel.length})
                 </button>
@@ -78,15 +159,20 @@ export default function Ressources() {
                 <button className={`btn btn-sm ${tab === 'sous-traitants' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('sous-traitants')}>
                     <Briefcase size={14} /> Sous-traitants ({sousTraitants.length})
                 </button>
-            </div>
-
-            <div className="page-header" style={{ marginBottom: 12 }}>
-                <div />
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                    <Plus size={18} />
-                    {tab === 'personnel' ? ' Employé' : tab === 'engins' ? ' Engin' : ' Sous-traitant'}
+                <button className={`btn btn-sm ${tab === 'pointages' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('pointages')}>
+                    <ClipboardCheck size={14} /> Pointages
                 </button>
             </div>
+
+            {canAdd && (
+                <div className="page-header" style={{ marginBottom: 12 }}>
+                    <div />
+                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                        <Plus size={18} />
+                        {getAddLabel()}
+                    </button>
+                </div>
+            )}
 
             {loading ? <div className="spinner" /> : (
                 <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -144,9 +230,62 @@ export default function Ressources() {
                             </tbody>
                         </table>
                     )}
+
+                    {tab === 'pointages' && (
+                        <>
+                            {projets.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
+                                    <Calendar size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+                                    <p>Aucun projet trouvé. Crée d'abord un projet pour gérer les pointages.</p>
+                                    <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={() => navigate('/projets')}>Aller aux projets</button>
+                                </div>
+                            ) : loadingPointages ? (
+                                <div style={{ padding: 60, textAlign: 'center' }}><div className="spinner" /></div>
+                            ) : (
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Employé</th>
+                                            <th>Date</th>
+                                            <th>Statut</th>
+                                            <th>Heures sup.</th>
+                                            <th>Montant</th>
+                                            <th>Observations</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {pointages.map(pt => (
+                                            <tr key={pt.id}>
+                                                <td style={{ fontWeight: 600 }}>
+                                                    {pt.personnel ? `${pt.personnel.prenom} ${pt.personnel.nom}` : '—'}
+                                                </td>
+                                                <td>{formatDate(pt.date)}</td>
+                                                <td>
+                                                    <span className={`badge ${statutPresenceBadge[pt.statut] || 'badge-gray'}`}>
+                                                        {statutPresenceLabels[pt.statut] || pt.statut}
+                                                    </span>
+                                                </td>
+                                                <td>{pt.heuresSupplementaires || 0}h</td>
+                                                <td className="montant">{formatFCFA(pt.montantJournalier)}</td>
+                                                <td>{pt.observations || '—'}</td>
+                                            </tr>
+                                        ))}
+                                        {pointages.length === 0 && (
+                                            <tr>
+                                                <td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                                                    Aucun pointage pour ce projet
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
 
+            {/* ─── Modal : Personnel ─── */}
             {showModal && tab === 'personnel' && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
@@ -185,6 +324,7 @@ export default function Ressources() {
                 </div>
             )}
 
+            {/* ─── Modal : Engin ─── */}
             {showModal && tab === 'engins' && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
@@ -215,6 +355,7 @@ export default function Ressources() {
                 </div>
             )}
 
+            {/* ─── Modal : Sous-traitant ─── */}
             {showModal && tab === 'sous-traitants' && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
@@ -235,6 +376,83 @@ export default function Ressources() {
                                 <div className="form-group"><label>Téléphone</label><input className="form-input" value={formSousTraitant.telephone} onChange={e => setFormSousTraitant({ ...formSousTraitant, telephone: e.target.value })} /></div>
                             </div>
                             <div className="form-group"><label>Email</label><input className="form-input" type="email" value={formSousTraitant.email} onChange={e => setFormSousTraitant({ ...formSousTraitant, email: e.target.value })} /></div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
+                                <button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Modal : Pointage ─── */}
+            {showModal && tab === 'pointages' && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Nouveau pointage</h2>
+                            <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleAddPointage}>
+                            <div className="form-group">
+                                <label>Employé *</label>
+                                <select
+                                    className="form-select"
+                                    required
+                                    value={formPointage.personnelId}
+                                    onChange={e => setFormPointage({ ...formPointage, personnelId: e.target.value })}
+                                >
+                                    <option value="">— Sélectionner un employé —</option>
+                                    {personnel.map(p => (
+                                        <option key={p.id} value={p.id}>{p.prenom} {p.nom} — {p.poste}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Date *</label>
+                                    <input
+                                        className="form-input"
+                                        type="date"
+                                        required
+                                        value={formPointage.date}
+                                        onChange={e => setFormPointage({ ...formPointage, date: e.target.value })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Statut *</label>
+                                    <select
+                                        className="form-select"
+                                        required
+                                        value={formPointage.statut}
+                                        onChange={e => setFormPointage({ ...formPointage, statut: e.target.value })}
+                                    >
+                                        {Object.entries(statutPresenceLabels).map(([k, v]) => (
+                                            <option key={k} value={k}>{v}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Heures supplémentaires</label>
+                                <input
+                                    className="form-input"
+                                    type="number"
+                                    min="0"
+                                    step="0.5"
+                                    value={formPointage.heuresSupplementaires}
+                                    onChange={e => setFormPointage({ ...formPointage, heuresSupplementaires: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Observations</label>
+                                <input
+                                    className="form-input"
+                                    value={formPointage.observations}
+                                    onChange={e => setFormPointage({ ...formPointage, observations: e.target.value })}
+                                    placeholder="Remarques éventuelles..."
+                                />
+                            </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
                                 <button type="submit" className="btn btn-primary"><Plus size={16} /> Ajouter</button>
