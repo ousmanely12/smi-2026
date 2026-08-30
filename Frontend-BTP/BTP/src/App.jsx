@@ -14,7 +14,7 @@ function App() {
             </div>
             <h1 className="landing-title">BATIPME-SN</h1>
             <p className="landing-tagline">Logiciel de Gestion de Projets BTP</p>
-            <p className="landing-subtitle">Adapté aux PME du Sénégal 🇸🇳</p>
+            <p className="landing-subtitle">Adapté aux PME du Sénégal</p>
           </div>
 
           <div className="landing-cta">
