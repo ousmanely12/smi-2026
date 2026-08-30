@@ -27,38 +27,38 @@ export default function Login() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 58, 95, 0.8) 50%, rgba(15, 23, 42, 0.9) 100%)' }}>
-        <div style={{ width: '100px', height: '100px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: '32px' }}>
+    <div className="login-page">
+      <div className="login-brand">
+        <div className="login-logo-icon">
           <Building2 size={64} />
         </div>
-        <h1 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '12px', color: '#fff' }}>BATIPME-SN</h1>
-        <p style={{ fontSize: '18px', color: '#94a3b8', marginBottom: '8px' }}>Logiciel de Gestion de Projets BTP</p>
-        <p style={{ fontSize: '14px', color: '#64748b' }}>Adapté aux PME du Sénégal 🇸🇳</p>
+        <h1>BATIPME-SN</h1>
+        <p>Logiciel de Gestion de Projets BTP</p>
+        <p className="login-brand-sub">Adapté aux PME du Sénégal 🇸🇳</p>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px' }}>
-        <div style={{ width: '100%', maxWidth: '420px', background: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(148, 163, 184, 0.12)', borderRadius: '24px', padding: '40px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>Bienvenue</h2>
-            <p style={{ color: '#94a3b8', fontSize: '14px' }}>Connectez-vous pour accéder à votre espace</p>
+      <div className="login-form-side">
+        <div className="login-form-card">
+          <div className="login-form-header">
+            <h2>Bienvenue</h2>
+            <p>Connectez-vous pour accéder à votre espace</p>
           </div>
 
           {error && (
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '12px 16px', borderRadius: '12px', fontSize: '13px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="login-error">
               <span>⚠️</span>
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#94a3b8', marginBottom: '8px' }}>Adresse email</label>
-              <div style={{ position: 'relative' }}>
-                <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+            <div className="form-group">
+              <label>Adresse email</label>
+              <div className="login-input-wrapper">
+                <Mail size={18} className="login-input-icon" />
                 <input
                   type="email"
-                  style={{ width: '100%', padding: '12px 14px 12px 42px', background: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.12)', borderRadius: '12px', color: '#f8fafc', fontFamily: 'Inter, sans-serif', fontSize: '14px' }}
+                  className="form-input login-input-with-icon"
                   placeholder="exemple@batipme.sn"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -67,13 +67,13 @@ export default function Login() {
               </div>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#94a3b8', marginBottom: '8px' }}>Mot de passe</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+            <div className="form-group">
+              <label>Mot de passe</label>
+              <div className="login-input-wrapper">
+                <Lock size={18} className="login-input-icon" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  style={{ width: '100%', padding: '12px 14px 12px 42px', background: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.12)', borderRadius: '12px', color: '#f8fafc', fontFamily: 'Inter, sans-serif', fontSize: '14px' }}
+                  className="form-input login-input-with-icon"
                   placeholder="••••••••"
                   value={motDePasse}
                   onChange={e => setMotDePasse(e.target.value)}
@@ -82,26 +82,22 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px', borderRadius: '8px' }}
+                  className="login-toggle-password"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8', cursor: 'pointer' }}>
-                <input type="checkbox" style={{ width: '16px', height: '16px' }} />
+            <div className="login-options">
+              <label className="login-remember">
+                <input type="checkbox" />
                 <span>Se souvenir de moi</span>
               </label>
-              <a href="#" style={{ fontSize: '13px', color: '#3b82f6', textDecoration: 'none' }}>Mot de passe oublié ?</a>
+              <a href="#" className="login-forgot">Mot de passe oublié ?</a>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)' }}
-            >
+            <button type="submit" disabled={loading} className="btn btn-primary login-submit-btn">
               {loading ? 'Connexion...' : (
                 <>
                   Se connecter
@@ -111,12 +107,176 @@ export default function Login() {
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(148, 163, 184, 0.12)' }}>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '4px' }}>Vous n'avez pas de compte ?</p>
-            <a href="#" style={{ fontSize: '13px', color: '#3b82f6', textDecoration: 'none', fontWeight: 500 }}>Contactez votre administrateur</a>
+          <div className="login-footer-text">
+            <p>Vous n'avez pas de compte ?</p>
+            <a href="#">Contactez votre administrateur</a>
           </div>
         </div>
       </div>
+
+      <style>{`
+        .login-page {
+          display: flex;
+          min-height: 100vh;
+          background: var(--bg-primary);
+          color: var(--text-primary);
+          font-family: 'Inter', sans-serif;
+        }
+        .login-brand {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 60px;
+          background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,58,95,0.8), rgba(15,23,42,0.9));
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .login-brand::before {
+          content: '';
+          position: absolute;
+          width: 400px; height: 400px;
+          background: radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%);
+          top: 20%; left: 10%;
+        }
+        .login-brand::after {
+          content: '';
+          position: absolute;
+          width: 300px; height: 300px;
+          background: radial-gradient(circle, rgba(16,185,129,0.1), transparent 70%);
+          bottom: 20%; right: 15%;
+        }
+        .login-logo-icon {
+          width: 100px; height: 100px;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          border-radius: 24px;
+          display: flex; align-items: center; justify-content: center;
+          color: white; margin-bottom: 32px;
+          position: relative; z-index: 1;
+          box-shadow: 0 8px 32px rgba(59, 130, 246, 0.4);
+        }
+        .login-brand h1 {
+          font-size: 48px; font-weight: 800; margin-bottom: 12px;
+          position: relative; z-index: 1;
+          background: linear-gradient(135deg, #fff, #94a3b8);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .login-brand p {
+          font-size: 18px; color: #94a3b8;
+          position: relative; z-index: 1;
+        }
+        .login-brand-sub {
+          font-size: 14px !important; color: #64748b !important;
+          margin-top: 8px;
+        }
+        .login-form-side {
+          flex: 1;
+          display: flex; align-items: center; justify-content: center;
+          padding: 60px;
+        }
+        .login-form-card {
+          width: 100%; max-width: 420px;
+          background: rgba(30,41,59,0.7);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(148,163,184,0.12);
+          border-radius: 24px;
+          padding: 40px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .login-form-header {
+          text-align: center; margin-bottom: 32px;
+        }
+        .login-form-header h2 {
+          font-size: 28px; font-weight: 700; margin-bottom: 8px;
+        }
+        .login-form-header p {
+          color: #94a3b8; font-size: 14px;
+        }
+        .login-error {
+          background: rgba(239,68,68,0.1);
+          border: 1px solid rgba(239,68,68,0.2);
+          color: #f87171;
+          padding: 12px 16px; border-radius: 12px;
+          font-size: 13px; margin-bottom: 24px;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .login-input-wrapper {
+          position: relative;
+        }
+        .login-input-icon {
+          position: absolute; left: 14px; top: 50%;
+          transform: translateY(-50%); color: #64748b;
+          pointer-events: none;
+        }
+        .login-input-with-icon {
+          padding-left: 42px !important;
+        }
+        .login-toggle-password {
+          position: absolute; right: 12px; top: 50%;
+          transform: translateY(-50%);
+          background: none; border: none; color: #64748b;
+          cursor: pointer; padding: 4px; border-radius: 8px;
+        }
+        .login-options {
+          display: flex; justify-content: space-between;
+          align-items: center; margin-bottom: 24px;
+        }
+        .login-remember {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 13px; color: #94a3b8; cursor: pointer;
+        }
+        .login-remember input { width: 16px; height: 16px; }
+        .login-forgot {
+          font-size: 13px; color: #3b82f6; text-decoration: none;
+        }
+        .login-submit-btn {
+          width: 100%; padding: 14px;
+          font-size: 15px; justify-content: center;
+          border-radius: 12px;
+        }
+        .login-footer-text {
+          text-align: center; margin-top: 24px; padding-top: 24px;
+          border-top: 1px solid rgba(148,163,184,0.12);
+        }
+        .login-footer-text p {
+          font-size: 13px; color: #94a3b8; margin-bottom: 4px;
+        }
+        .login-footer-text a {
+          font-size: 13px; color: #3b82f6; text-decoration: none; font-weight: 500;
+        }
+
+        /* Mobile Login */
+        @media (max-width: 768px) {
+          .login-page { flex-direction: column; }
+          .login-brand {
+            padding: 40px 20px; min-height: auto;
+          }
+          .login-logo-icon {
+            width: 72px; height: 72px;
+            margin-bottom: 20px;
+          }
+          .login-logo-icon svg { width: 40px; height: 40px; }
+          .login-brand h1 { font-size: 32px; }
+          .login-brand p { font-size: 15px; }
+          .login-form-side { padding: 24px 16px; }
+          .login-form-card {
+            padding: 28px 20px;
+            border-radius: 20px;
+          }
+          .login-form-header h2 { font-size: 24px; }
+          .login-options { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
+        @media (max-width: 480px) {
+          .login-brand { padding: 32px 16px; }
+          .login-brand h1 { font-size: 28px; }
+          .login-form-side { padding: 20px 12px; }
+          .login-form-card { padding: 24px 16px; border-radius: 16px; }
+        }
+      `}</style>
     </div>
   );
 }

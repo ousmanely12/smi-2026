@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, LogOut, Settings, User, ChevronDown, Search } from 'lucide-react';
+import { Bell, LogOut, Settings, User, ChevronDown, Search, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const roleLabels = {
@@ -13,12 +13,13 @@ const roleLabels = {
   maitre_ouvrage_externe: 'Maître d\'Ouvrage',
 };
 
-export default function Topbar() {
+export default function Topbar({ onToggleSidebar }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const userDropdownRef = useRef(null);
   const notifDropdownRef = useRef(null);
 
@@ -50,7 +51,10 @@ export default function Topbar() {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <div className="search-wrapper">
+        <button className="topbar-btn hamburger-btn" onClick={onToggleSidebar} aria-label="Menu">
+          <Menu size={22} />
+        </button>
+        <div className={`search-wrapper ${showMobileSearch ? 'mobile-visible' : ''}`}>
           <Search size={18} className="search-icon" />
           <input
             type="text"
@@ -60,6 +64,9 @@ export default function Topbar() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <button className="topbar-btn search-toggle-btn" onClick={() => setShowMobileSearch(!showMobileSearch)} aria-label="Rechercher">
+          <Search size={20} />
+        </button>
       </div>
 
       <div className="topbar-right">
@@ -162,11 +169,23 @@ export default function Topbar() {
           display: flex; align-items: center;
           justify-content: space-between;
           padding: 0 24px; z-index: 99;
+          transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hamburger-btn {
+          display: none !important;
+        }
+
+        .search-toggle-btn {
+          display: none !important;
         }
         
         .topbar-left {
           flex: 1;
           max-width: 400px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         
         .search-wrapper {
@@ -511,6 +530,77 @@ export default function Topbar() {
         
         .dropdown-item.danger:hover {
           background: rgba(239,68,68,0.1);
+        }
+
+        /* ═══ TOPBAR MOBILE ═══ */
+        @media (max-width: 768px) {
+          .topbar {
+            left: 0;
+            padding: 0 12px;
+          }
+
+          .hamburger-btn {
+            display: flex !important;
+          }
+
+          .search-wrapper {
+            display: none;
+          }
+          .search-wrapper.mobile-visible {
+            display: block;
+            position: absolute;
+            top: var(--topbar-height);
+            left: 0;
+            right: 0;
+            max-width: 100%;
+            padding: 12px;
+            background: rgba(15,23,42,0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--surface-border);
+            z-index: 98;
+            animation: slideDown 0.2s ease;
+          }
+          .search-wrapper.mobile-visible .search-input {
+            max-width: 100%;
+          }
+
+          .search-toggle-btn {
+            display: flex !important;
+          }
+
+          .user-info {
+            display: none;
+          }
+
+          .user-btn {
+            padding: 4px;
+            background: transparent;
+            border: none;
+          }
+
+          .chevron {
+            display: none;
+          }
+
+          .notif-dropdown {
+            width: calc(100vw - 24px);
+            right: -60px;
+          }
+
+          .user-dropdown {
+            width: calc(100vw - 24px);
+            right: -8px;
+          }
+
+          .topbar-right {
+            gap: 4px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .topbar {
+            padding: 0 8px;
+          }
         }
       `}</style>
     </header>

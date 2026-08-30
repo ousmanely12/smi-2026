@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FolderKanban, CalendarDays, Wallet,
-  Users, ClipboardCheck, FileText, Truck, Receipt, ShieldCheck
+  Users, ClipboardCheck, FileText, Truck, Receipt, ShieldCheck, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,7 +19,7 @@ const navItems = [
   { to: '/admin/utilisateurs', icon: ShieldCheck, label: 'Utilisateurs', roles: ['directeur_general', 'directeur_technique'] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const { user } = useAuth();
 
@@ -28,7 +28,7 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
         <div className="logo-icon">
           <div className="logo-inner">B</div>
@@ -37,6 +37,9 @@ export default function Sidebar() {
           <h2>BATIPME-SN</h2>
           <span>Gestion BTP</span>
         </div>
+        <button className="sidebar-close-btn" onClick={onClose} aria-label="Fermer le menu">
+          <X size={22} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -51,6 +54,7 @@ export default function Sidebar() {
               to={item.to}
               className={`nav-item ${isActive ? 'active' : ''}`}
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={onClose}
             >
               <div className="nav-icon-wrapper">
                 <Icon size={20} />
@@ -79,6 +83,39 @@ export default function Sidebar() {
           z-index: 100;
           overflow-y: auto;
           backdrop-filter: blur(20px);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sidebar-close-btn {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          padding: 6px;
+          border-radius: var(--radius-sm);
+          margin-left: auto;
+          transition: all var(--transition-fast);
+        }
+        .sidebar-close-btn:hover {
+          color: var(--text-primary);
+          background: var(--bg-tertiary);
+        }
+
+        @media (max-width: 768px) {
+          .sidebar {
+            transform: translateX(-100%);
+            box-shadow: none;
+          }
+          .sidebar.open {
+            transform: translateX(0);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+          }
+          .sidebar-close-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
         }
         
         .sidebar-logo {
@@ -106,6 +143,7 @@ export default function Sidebar() {
           overflow: hidden;
           box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
           transition: all var(--transition-normal);
+          flex-shrink: 0;
         }
         
         .logo-icon:hover {
